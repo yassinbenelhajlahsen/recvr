@@ -4,10 +4,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { data: claims, error } = await supabase.auth.getClaims();
+  if (error || !claims) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = claims.claims.sub as string;
 
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search") ?? "";
@@ -16,7 +15,7 @@ export async function GET(request: Request) {
 
   const workouts = await prisma.workout.findMany({
     where: {
-      user_id: user.id,
+      user_id: userId,
       ...(from || to
         ? {
             date: {
@@ -40,7 +39,7 @@ export async function GET(request: Request) {
         orderBy: { order: "asc" },
         include: {
           exercise: { select: { name: true, muscle_groups: true } },
-          sets: true,
+          sets: { select: { id: true, set_number: true, reps: true, weight: true } },
         },
       },
     },

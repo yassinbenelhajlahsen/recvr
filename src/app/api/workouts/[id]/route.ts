@@ -6,8 +6,11 @@ const WORKOUT_INCLUDE = {
   workout_exercises: {
     orderBy: { order: "asc" as const },
     include: {
-      exercise: true,
-      sets: { orderBy: { set_number: "asc" as const } },
+      exercise: { select: { id: true, name: true, muscle_groups: true, equipment: true } },
+      sets: {
+        orderBy: { set_number: "asc" as const },
+        select: { id: true, set_number: true, reps: true, weight: true },
+      },
     },
   },
 };
@@ -18,12 +21,13 @@ export async function GET(
 ) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: { user } }, workout] = await Promise.all([
-    supabase.auth.getUser(),
+  const [{ data: claims, error }, workout] = await Promise.all([
+    supabase.auth.getClaims(),
     prisma.workout.findUnique({ where: { id }, include: WORKOUT_INCLUDE }),
   ]);
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!workout || workout.user_id !== user.id) {
+  if (error || !claims) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = claims.claims.sub as string;
+  if (!workout || workout.user_id !== userId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   return NextResponse.json(workout);

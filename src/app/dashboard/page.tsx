@@ -32,21 +32,22 @@ export default async function DashboardPage({
   searchParams: Promise<{ search?: string; datePreset?: string; muscles?: string }>;
 }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: claims, error } = await supabase.auth.getClaims();
 
-  if (!user) redirect("/auth/signin");
+  if (error || !claims) redirect("/auth/signin");
+
+  const userId = claims.claims.sub as string;
+  const userEmail = claims.claims.email as string;
 
   const { search = "", datePreset, muscles: musclesParam } = await searchParams;
   const muscles = musclesParam ? musclesParam.split(",").filter(Boolean) : [];
   const { from, to } = resolveDatePreset(datePreset);
 
   const [dbUser, workouts] = await Promise.all([
-    prisma.user.findUnique({ where: { id: user.id } }),
+    prisma.user.findUnique({ where: { id: userId } }),
     prisma.workout.findMany({
       where: {
-        user_id: user.id,
+        user_id: userId,
         ...(from || to
           ? {
               date: {
@@ -81,7 +82,7 @@ export default async function DashboardPage({
     }),
   ]);
 
-  const displayName = dbUser?.name || user.email;
+  const displayName = dbUser?.name || userEmail;
 
   const serializedWorkouts = workouts.map((w) => ({
     id: w.id,
