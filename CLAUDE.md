@@ -168,15 +168,20 @@ src/
 │   │   └── MetricsInputs.tsx   # Reusable height/weight input fields
 │   ├── settings/
 │   │   ├── SettingsDrawer.tsx  # Settings drawer: profile, body metrics, goals (all functional)
-│   │   ├── AccountTab.tsx      # Profile + account deletion tab
+│   │   ├── AccountTab.tsx      # Profile + account deletion tab (uses colocated hooks)
 │   │   ├── FitnessTab.tsx      # Body metrics + goals tab
-│   │   └── SectionHeader.tsx   # Shared section header component
+│   │   ├── SectionHeader.tsx   # Shared section header component
+│   │   └── hooks/
+│   │       ├── useProfileSave.ts    # name state, dirty check, handleSaveProfile
+│   │       ├── usePasswordReset.ts  # all password state + handleResetPassword
+│   │       └── useDeleteAccount.ts  # confirm/deleting state + handleDeleteAccount
 │   └── ui/
 │       ├── Modal.tsx
 │       ├── Drawer.tsx          # flushSync on open to fix first-open animation (React 18)
 │       ├── DropdownMenu.tsx    # Portal dropdown: DropdownMenu, DropdownMenuItem, DropdownMenuDivider
 │       ├── FloatingInput.tsx   # Floating label input component
-│       └── PasswordChecklist.tsx # Password validation checklist
+│       ├── PasswordChecklist.tsx # Password validation checklist
+│       └── icons.tsx           # Shared SVG icons: EyeIcon, EyeOffIcon (named exports)
 ├── store/
 │   ├── workoutStore.ts         # Drawer state (isDrawerOpen, drawerView, openDrawer, closeDrawer, setDrawerView)
 │   ├── appStore.ts             # App-wide state (isOnboarding flag)

@@ -1,53 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { FloatingInput } from "@/components/ui/FloatingInput";
-import {
-  PasswordChecklist,
-  passwordMeetsRequirements,
-} from "@/components/ui/PasswordChecklist";
-import { createClient } from "@/lib/supabase/client";
+import { PasswordChecklist } from "@/components/ui/PasswordChecklist";
+import { EyeIcon, EyeOffIcon } from "@/components/ui/icons";
 import { SectionHeader } from "./SectionHeader";
+import { useProfileSave } from "./hooks/useProfileSave";
+import { usePasswordReset } from "./hooks/usePasswordReset";
+import { useDeleteAccount } from "./hooks/useDeleteAccount";
 import type { UserProfile } from "@/types/user";
-
-const EyeIcon = () => (
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
-    />
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-    />
-  </svg>
-);
-
-const EyeOffIcon = () => (
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"
-    />
-  </svg>
-);
 
 interface AccountTabProps {
   user: UserProfile;
@@ -56,122 +17,34 @@ interface AccountTabProps {
 }
 
 export function AccountTab({ user, open, onClose }: AccountTabProps) {
-  const router = useRouter();
+  const { name, setName, saving, isAccountDirty, handleSaveProfile } =
+    useProfileSave(user, onClose);
 
-  // ── Profile state ──
-  const [name, setName] = useState(user.name ?? "");
-  const [saving, setSaving] = useState(false);
+  const {
+    newPassword,
+    setNewPassword,
+    confirmPassword,
+    setConfirmPassword,
+    showNewPassword,
+    setShowNewPassword,
+    showConfirmPassword,
+    setShowConfirmPassword,
+    passwordError,
+    setPasswordError,
+    passwordSuccess,
+    setPasswordSuccess,
+    passwordSaving,
+    confirmMismatch,
+    handleResetPassword,
+  } = usePasswordReset(open);
 
-  // ── Password state ──
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordSuccess, setPasswordSuccess] = useState(false);
-  const [passwordSaving, setPasswordSaving] = useState(false);
-
-  // ── Delete state ──
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  // Sync name when user prop changes
-  useEffect(() => {
-    setName(user.name ?? "");
-  }, [user]);
-
-  // Reset transient state when drawer closes
-  useEffect(() => {
-    if (!open) {
-      setNewPassword("");
-      setConfirmPassword("");
-      setShowNewPassword(false);
-      setShowConfirmPassword(false);
-      setPasswordError(null);
-      setPasswordSuccess(false);
-      setConfirmDelete(false);
-    }
-  }, [open]);
-
-  const isAccountDirty = name !== (user.name ?? "");
-  const confirmMismatch =
-    confirmPassword.length > 0 && confirmPassword !== newPassword;
+  const { confirmDelete, setConfirmDelete, deleting, handleDeleteAccount } =
+    useDeleteAccount(open);
 
   const providers = user.providers ?? [];
   const canChangePassword =
     providers.includes("email") ||
     (!providers.length && !providers.includes("google"));
-
-  async function handleSaveProfile() {
-    setSaving(true);
-    const trimmedName = name.trim() || null;
-    const supabase = createClient();
-    await Promise.all([
-      fetch("/api/user/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: trimmedName,
-          height_inches: user.height_inches,
-          weight_lbs: user.weight_lbs,
-          fitness_goals: user.fitness_goals ?? [],
-        }),
-      }),
-      supabase.auth.updateUser({
-        data: { full_name: trimmedName },
-      }),
-    ]);
-    setSaving(false);
-    onClose();
-    router.refresh();
-  }
-
-  async function handleResetPassword() {
-    setPasswordError(null);
-    setPasswordSuccess(false);
-
-    if (!passwordMeetsRequirements(newPassword)) {
-      setPasswordError("Password does not meet all requirements.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordError("Passwords don't match.");
-      return;
-    }
-
-    setPasswordSaving(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-
-    if (error) {
-      setPasswordError(error.message);
-    } else {
-      setPasswordSuccess(true);
-      setNewPassword("");
-      setConfirmPassword("");
-    }
-    setPasswordSaving(false);
-  }
-
-  async function handleDeleteAccount() {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
-
-    setDeleting(true);
-    const res = await fetch("/api/user/delete", { method: "DELETE" });
-    if (res.ok) {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      router.push("/auth/signin");
-    } else {
-      setDeleting(false);
-      setConfirmDelete(false);
-    }
-  }
 
   return (
     <>
