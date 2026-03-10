@@ -116,7 +116,7 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
                 <FloatingInput
                   id="onboarding-name"
                   type="text"
-                  label="Display name"
+                  label="Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required={false}

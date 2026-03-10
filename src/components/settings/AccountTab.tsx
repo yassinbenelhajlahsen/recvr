@@ -175,7 +175,7 @@ export function AccountTab({ user, open, onClose }: AccountTabProps) {
           <FloatingInput
             id="settings-name"
             type="text"
-            label="Display name"
+            label="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required={false}
