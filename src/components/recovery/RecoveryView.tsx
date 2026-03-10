@@ -1,32 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { MuscleRecovery } from "@/lib/recovery";
+import type { MuscleRecovery } from "@/types/recovery";
 import { BodyMapFront } from "./BodyMapFront";
 import { BodyMapBack } from "./BodyMapBack";
 import { MuscleDetailPanel } from "./MuscleDetailPanel";
 import { getRecoveryStatus, STATUS_LABELS, STATUS_COLORS } from "./recoveryColors";
+import { useRecoverySelection } from "./hooks/useRecoverySelection";
 
 type Props = {
   recovery: MuscleRecovery[];
 };
 
 export function RecoveryView({ recovery }: Props) {
-  const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
-
-  const muscleMap = Object.fromEntries(
-    recovery.map((r) => [r.muscle, { recoveryPct: r.recoveryPct }])
-  );
-
-  const selectedData = recovery.find((r) => r.muscle === selectedMuscle) ?? null;
-
-  function handleSelect(muscle: string) {
-    setSelectedMuscle((prev) => (prev === muscle ? null : muscle));
-  }
-
-  const fatigued = recovery.filter((r) => r.status === "fatigued").length;
-  const partial = recovery.filter((r) => r.status === "partial").length;
-  const recovered = recovery.filter((r) => r.status === "recovered").length;
+  const { selectedMuscle, selectedData, muscleMap, handleSelect, fatigued, partial, recovered } =
+    useRecoverySelection(recovery);
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,7 +53,7 @@ export function RecoveryView({ recovery }: Props) {
           {selectedData ? (
             <MuscleDetailPanel
               recovery={selectedData}
-              onClose={() => setSelectedMuscle(null)}
+              onClose={() => handleSelect(selectedMuscle!)}
             />
           ) : (
             <div className="bg-surface border border-border-subtle rounded-xl flex-1 flex flex-col items-center justify-center text-center gap-2">
