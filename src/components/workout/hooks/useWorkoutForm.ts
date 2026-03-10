@@ -37,6 +37,9 @@ export function useWorkoutForm({
   const [duration, setDuration] = useState(
     initialData?.duration_minutes != null ? String(initialData.duration_minutes) : ""
   );
+  const [bodyWeight, setBodyWeight] = useState(
+    initialData?.body_weight != null ? String(initialData.body_weight) : ""
+  );
 
   const [customLoading, setCustomLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -74,6 +77,12 @@ export function useWorkoutForm({
   }
 
   async function handleSubmit() {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    if (date > todayStr) {
+      setError("Date cannot be in the future");
+      return;
+    }
     if (exercises.length === 0) {
       setError("Add at least one exercise");
       return;
@@ -93,6 +102,7 @@ export function useWorkoutForm({
         date,
         notes: notes || null,
         duration_minutes: duration || null,
+        body_weight: bodyWeight ? parseFloat(bodyWeight) : null,
         exercises: exercises.map((ex, i) => ({
           exercise_id: ex.exercise_id,
           order: i,
@@ -118,6 +128,7 @@ export function useWorkoutForm({
           id,
           date,
           duration_minutes: duration ? Number(duration) : null,
+          body_weight: bodyWeight ? parseFloat(bodyWeight) : null,
           notes: notes || null,
           workout_exercises: exercises.map((ex, i) => ({
             id: `local-we-${i}`,
@@ -148,6 +159,8 @@ export function useWorkoutForm({
     setNotes,
     duration,
     setDuration,
+    bodyWeight,
+    setBodyWeight,
     saving,
     error,
     customLoading,

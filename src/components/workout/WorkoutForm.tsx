@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -13,6 +14,10 @@ import type { Exercise, WorkoutFormProps as Props } from "@/types/workout";
 
 export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact }: Props) {
   const isEdit = !!workoutId;
+  const today = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
 
   const { exercises, addExercise, removeExercise, addSet, removeSet, updateSet } =
     useExerciseList(initialData);
@@ -39,6 +44,8 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
     setNotes,
     duration,
     setDuration,
+    bodyWeight,
+    setBodyWeight,
     saving,
     error,
     customLoading,
@@ -97,19 +104,20 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
       {/* Details */}
       <div className={compact ? "space-y-4" : "rounded-xl bg-surface border border-border-subtle p-6 space-y-5"}>
         <p className="text-xs font-semibold text-muted uppercase tracking-wider">Details</p>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
+        <div className="flex items-end justify-between gap-3">
+          <div className="space-y-1.5 flex-1">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted">Date</label>
             <input
               type="date"
               value={date}
+              max={today}
               onChange={(e) => setDate(e.target.value)}
               className="w-full rounded-lg border border-border bg-elevated px-3.5 py-2.5 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 w-20">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted">
-              Duration (min)
+              Min
             </label>
             <input
               type="number"
@@ -117,7 +125,21 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
               placeholder="60"
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
-              className="w-full rounded-lg border border-border bg-elevated px-3.5 py-2.5 text-sm text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
+              className="w-full rounded-lg border border-border bg-elevated px-2.5 py-2.5 text-sm text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
+            />
+          </div>
+          <div className="space-y-1.5 w-20">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted">
+              Lbs
+            </label>
+            <input
+              type="number"
+              min="1"
+              step="0.1"
+              placeholder="175"
+              value={bodyWeight}
+              onChange={(e) => setBodyWeight(e.target.value)}
+              className="w-full rounded-lg border border-border bg-elevated px-2.5 py-2.5 text-sm text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
             />
           </div>
         </div>

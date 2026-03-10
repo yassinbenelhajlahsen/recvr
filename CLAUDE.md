@@ -81,6 +81,13 @@ npx prisma studio        # Open Prisma Studio (DB GUI)
 - Search uses `hasSome: [query]` for exact muscle name matching (case-sensitive, so values are always lowercase).
 - Both `/api/exercises` and the dashboard workout filter search by name OR muscle group — typing `"core"` or `"abs"` returns matching results.
 
+## Loading States
+
+- **`loading.tsx` files** exist for `/dashboard`, `/recovery`, and `/progress` — Next.js App Router shows these instantly while the server fetches data
+- **Shimmer class**: `.skeleton` in `globals.css` — a `background: linear-gradient(90deg, surface→elevated→surface)` animated at `1.6s`. Use `className="skeleton"` on any placeholder `<div>`; set width/height via Tailwind or inline style
+- **Pattern**: skeleton elements mirror the real page layout — same card structure, same column arrangement, same aspect ratios for body maps and charts
+- Do NOT use `animate-pulse` — use the custom `.skeleton` class for consistent shimmer across light/dark mode
+
 ## Design System
 
 - **Fonts**: Fraunces (display/headlines, `font-display`), Geist Sans (body/UI, `font-sans`)
@@ -111,14 +118,14 @@ npx prisma studio        # Open Prisma Studio (DB GUI)
 - `/onboarding` — locked multi-step onboarding (name → body metrics → goal). Server-side gate: redirects to `/dashboard` if already onboarded, redirects to `/auth/signin` if not authed. Dashboard also redirects here if `onboarding_completed` is false.
 - `/dashboard` — the main screen: greeting, log workout CTA, filters, full workout list + recovery panel (DashboardClient)
 - `/recovery` — full recovery page: front+back SVG body maps + tap-to-inspect muscle detail panel
-- `/progress` — per-exercise progress charts (estimated 1RM + total volume over time), exercise selector, date range filter, stats bar
+- `/progress` — per-exercise progress charts (estimated 1RM) + body weight tracker, side-by-side on desktop. Exercise selector (1RM only), shared date range filter. Full-width layout (no max-width container).
 
 ## TypeScript Types
 
 - **All shared types live in `src/types/`** — never define reusable types inline in component or lib files
 - **Rule**: if a type is used by more than one file, or could be, it goes in `src/types/`. Internal one-off types (e.g. a local state shape used nowhere else) may stay inline.
 - **Files**:
-  - `src/types/progress.ts` — `DateRangePreset`, `PerformedExercise`, `ExerciseSession`, `ChartDataPoint`, `ProgressClientProps`
+  - `src/types/progress.ts` — `DateRangePreset`, `PerformedExercise`, `ExerciseSession`, `ChartDataPoint`, `BodyWeightEntry`, `BodyWeightChartPoint`, `ProgressClientProps`
   - `src/types/recovery.ts` — `RecoveryStatus`, `MuscleRecovery`, `BodyMapProps`
   - `src/types/workout.ts` — `SetEntry`, `ExerciseEntry`, `Exercise`, `WorkoutFormInitialData`, `WorkoutSaveData`, `WorkoutFormProps`, `WorkoutPreview`, `SessionSummaryData`, `SetData`, `ExerciseData`, `WorkoutExerciseData`, `WorkoutDetail`, `Workout`, `DashboardClientProps`
   - `src/types/user.ts` — `UnitSystem`, `UserProfile`, `Tab`
@@ -140,15 +147,18 @@ src/
 │   ├── layout.tsx              # Root layout (ThemeProvider, Navbar)
 │   ├── page.tsx                # Redirects to /dashboard
 │   ├── dashboard/page.tsx      # Unified main screen (Server Component)
+│   ├── dashboard/loading.tsx   # Shimmer skeleton for dashboard (workout list + recovery panel)
 │   ├── onboarding/page.tsx     # Onboarding gate (Server Component)
 │   ├── auth/
 │   │   ├── signin/page.tsx
 │   │   ├── signup/page.tsx
 │   │   └── callback/route.ts   # OAuth + email confirmation handler
 │   ├── recovery/
-│   │   └── page.tsx            # Full recovery page (Server Component)
+│   │   ├── page.tsx            # Full recovery page (Server Component)
+│   │   └── loading.tsx         # Shimmer skeleton for recovery (body maps + stat pills)
 │   ├── progress/
-│   │   └── page.tsx            # Progress page (Server Component — Prisma query, passes to ProgressClient)
+│   │   ├── page.tsx            # Progress page (Server Component — Prisma query, passes to ProgressClient)
+│   │   └── loading.tsx         # Shimmer skeleton for progress (filters + stats + charts)
 │   └── api/
 │       ├── exercises/route.ts
 │       ├── workouts/route.ts
@@ -184,13 +194,13 @@ src/
 │   │   └── hooks/
 │   │       └── useRecoverySelection.ts # selectedMuscle state, handleSelect toggle, muscleMap, status counts
 │   ├── progress/
-│   │   ├── ProgressClient.tsx  # Orchestrator: ExerciseSelector + DateRangeSelector + StatsBar + charts
+│   │   ├── ProgressClient.tsx  # Orchestrator: ExerciseSelector + DateRangeSelector + StatsBar + side-by-side charts (1RM + body weight)
 │   │   ├── ExerciseSelector.tsx # Styled <select> of performed exercises with session counts
 │   │   ├── DateRangeSelector.tsx # Pill buttons: 30d / 90d / 6m / 1y / all (framer-motion layoutId)
 │   │   ├── StatsBar.tsx        # 3-card row: best 1RM, avg volume, sessions tracked
-│   │   ├── ProgressChart.tsx   # Recharts LineChart wrapper (1RM or volume, custom tooltip)
+│   │   ├── ProgressChart.tsx   # Generic Recharts LineChart wrapper (any dataKey, custom tooltip)
 │   │   └── hooks/
-│   │       └── useProgressFilters.ts # selectedExerciseId, dateRange, chartData (useMemo), stats
+│   │       └── useProgressFilters.ts # selectedExerciseId, dateRange, chartData, bodyWeightChartData (useMemo), stats
 │   ├── layout/
 │   │   ├── Navbar.tsx          # Top nav bar (logo, nav links, avatar button)
 │   │   ├── UserMenu.tsx        # Avatar dropdown: theme toggle, settings, sign out
@@ -260,6 +270,15 @@ prisma/
 - **Dashboard integration**: `RecoveryPanel` is a sticky right-column sidebar; recovery data is fetched in parallel with workouts in `dashboard/page.tsx`. The panel is **view-only** (body maps + stat pills, no tap-to-inspect); the entire card links to `/recovery` for full details
 - **`BodyMapProps.onSelectMuscle` is optional** — body maps can be rendered without click handlers (used in dashboard panel)
 
+## Body Weight Tracking
+
+- **`body_weight` (Float?)** on the Workout model — optional per-workout body weight entry
+- **WorkoutForm** includes a "Weight (lbs)" input alongside Date and Duration
+- **Smart profile sync**: when a workout is saved (POST or PUT) with body_weight, the API checks if it's the most recent workout with body_weight. Only then does it update `User.weight_lbs`. This prevents editing an old workout from overwriting a newer weight.
+- **Settings independence**: manual weight changes in Settings drawer update `User.weight_lbs` directly and don't affect the progress chart. The chart reads from `Workout.body_weight` entries only.
+- **Progress page**: body weight chart shown side-by-side with 1RM chart (right column). Not tied to exercise selector — filtered only by date range.
+- **Recharts animation fix**: `ProgressChart` accepts a `chartKey` prop passed as `key` to the `LineChart`. This forces a full remount (fresh draw-in) instead of SVG path morphing between unrelated datasets, which causes line clipping. 1RM chart keys on `exerciseId-dateRange`, body weight chart keys on `dateRange`.
+
 ## State Management (Zustand)
 
 - **`src/store/workoutStore.ts`** — drawer state, view routing, workout preview data, and session summary data
@@ -280,6 +299,7 @@ prisma/
 
 ## Navbar & User Menu
 
+- **Nav links** (Progress, Recovery): highlight with `text-accent` when active (matched via `pathname`), otherwise `text-muted`
 - **Avatar button** (top right): 36×36 `rounded-full bg-surface border border-border-subtle`, shows user initials (`text-accent`). Initials derived from `user.user_metadata?.full_name` or first letter of email.
 - **Dropdown** (`UserMenu.tsx`): opens on avatar click via `DropdownMenu` portal. Contains: email header, theme toggle, settings button, sign out. Closes on route change, Escape, click-outside, scroll.
 - **Settings drawer** (`SettingsDrawer.tsx`): right-slide `Drawer` with three sections — Profile (name editable, email read-only), Body Metrics (height/weight), Goals (preset pills + custom text). All sections functional. Navbar lazy-fetches profile via `GET /api/user/profile` when drawer opens. Save calls `PUT /api/user/profile` + `router.refresh()`.

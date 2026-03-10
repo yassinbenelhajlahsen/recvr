@@ -24,6 +24,7 @@ export type WorkoutFormInitialData = {
   date: string;
   notes: string | null;
   duration_minutes: number | null;
+  body_weight?: number | null;
   exercises: {
     exercise_id: string;
     exercise_name: string;
@@ -38,6 +39,7 @@ export type WorkoutSaveData = {
   id: string;
   date: string;
   duration_minutes: number | null;
+  body_weight?: number | null;
   notes: string | null;
   workout_exercises: {
     id: string;
@@ -68,6 +70,7 @@ export type SessionSummaryData = {
   id: string;
   date: string;
   duration_minutes: number | null;
+  body_weight?: number | null;
   notes: string | null;
   workout_exercises: {
     id: string;
@@ -91,6 +94,7 @@ export type WorkoutDetail = {
   id: string;
   date: string;
   duration_minutes: number | null;
+  body_weight?: number | null;
   notes: string | null;
   workout_exercises: WorkoutExerciseData[];
 };

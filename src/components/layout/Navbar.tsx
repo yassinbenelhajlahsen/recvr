@@ -18,7 +18,8 @@ function getInitials(name?: string | null, email?: string): string {
 
 export function Navbar() {
   const pathname = usePathname();
-  const isOnboarding = useAppStore((s) => s.isOnboarding) || pathname === "/onboarding";
+  const isOnboarding =
+    useAppStore((s) => s.isOnboarding) || pathname === "/onboarding";
   const isAuthPage = pathname.startsWith("/auth");
   const showNavLinks = !isOnboarding && !isAuthPage;
 
@@ -57,12 +58,28 @@ export function Navbar() {
 
           <div className="absolute right-2 flex items-center gap-1">
             {user && showNavLinks && (
-              <Link
-                href="/recovery"
-                className="text-sm font-medium text-muted hover:text-primary px-3 py-2 rounded-lg hover:bg-surface transition-colors"
-              >
-                Recovery
-              </Link>
+              <>
+                <Link
+                  href="/progress"
+                  className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${
+                    pathname === "/progress"
+                      ? "text-accent"
+                      : "text-muted hover:text-primary hover:bg-surface"
+                  }`}
+                >
+                  Progress
+                </Link>
+                <Link
+                  href="/recovery"
+                  className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${
+                    pathname === "/recovery"
+                      ? "text-accent"
+                      : "text-muted hover:text-primary hover:bg-surface"
+                  }`}
+                >
+                  Recovery
+                </Link>
+              </>
             )}
             {user && (
               <button
@@ -90,21 +107,23 @@ export function Navbar() {
             onSignOut={handleSignOut}
             onboarding={isOnboarding}
           />
-          {showNavLinks && <SettingsDrawer
-            open={settingsOpen}
-            onClose={() => {
-              setSettingsOpen(false);
-              clearProfile();
-            }}
-            user={{
-              email: user.email ?? "",
-              name: profile?.name ?? displayName ?? null,
-              height_inches: profile?.height_inches ?? null,
-              weight_lbs: profile?.weight_lbs ?? null,
-              fitness_goals: profile?.fitness_goals ?? [],
-              providers: user.app_metadata?.providers ?? [],
-            }}
-          />}
+          {showNavLinks && (
+            <SettingsDrawer
+              open={settingsOpen}
+              onClose={() => {
+                setSettingsOpen(false);
+                clearProfile();
+              }}
+              user={{
+                email: user.email ?? "",
+                name: profile?.name ?? displayName ?? null,
+                height_inches: profile?.height_inches ?? null,
+                weight_lbs: profile?.weight_lbs ?? null,
+                fitness_goals: profile?.fitness_goals ?? [],
+                providers: user.app_metadata?.providers ?? [],
+              }}
+            />
+          )}
         </>
       )}
     </>

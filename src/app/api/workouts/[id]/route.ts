@@ -51,7 +51,15 @@ export async function PUT(
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
-  const { date, notes, duration_minutes, exercises } = body;
+  const { date, notes, duration_minutes, body_weight, exercises } = body;
+
+  // Block future dates (1-day tolerance for timezone differences)
+  if (date) {
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    if (date > tomorrow) {
+      return NextResponse.json({ error: "Date cannot be in the future" }, { status: 400 });
+    }
+  }
 
   // Delete existing workout_exercises (sets cascade)
   await prisma.workoutExercise.deleteMany({ where: { workout_id: id } });
@@ -64,6 +72,7 @@ export async function PUT(
         : existing.date,
       notes: notes || null,
       duration_minutes: duration_minutes ? parseInt(String(duration_minutes)) : null,
+      body_weight: typeof body_weight === "number" && body_weight > 0 ? body_weight : null,
       workout_exercises: {
         create: exercises.map((ex: { exercise_id: string; order?: number; sets: { set_number: number; reps: string; weight: string }[] }, i: number) => ({
           exercise_id: ex.exercise_id,
@@ -80,6 +89,22 @@ export async function PUT(
     },
     select: { id: true },
   });
+
+  // Smart sync: update User.weight_lbs only if this is the latest workout with body_weight
+  const parsedWeight = typeof body_weight === "number" && body_weight > 0 ? body_weight : null;
+  if (parsedWeight) {
+    const latest = await prisma.workout.findFirst({
+      where: { user_id: user.id, body_weight: { not: null } },
+      orderBy: { date: "desc" },
+      select: { id: true, body_weight: true },
+    });
+    if (latest && latest.id === id) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { weight_lbs: Math.round(parsedWeight) },
+      });
+    }
+  }
 
   return NextResponse.json(workout);
 }

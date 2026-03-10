@@ -59,9 +59,17 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
-  const { date, notes, duration_minutes, exercises } = body;
+  const { date, notes, duration_minutes, body_weight, exercises } = body;
   if (!Array.isArray(exercises)) {
     return NextResponse.json({ error: "exercises must be an array" }, { status: 400 });
+  }
+
+  // Block future dates (1-day tolerance for timezone differences)
+  if (date) {
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    if (date > tomorrow) {
+      return NextResponse.json({ error: "Date cannot be in the future" }, { status: 400 });
+    }
   }
 
   const workout = await prisma.workout.create({
@@ -71,6 +79,7 @@ export async function POST(request: Request) {
       date: date ? new Date(`${date}T${new Date().toISOString().slice(11)}`) : new Date(),
       notes: notes || null,
       duration_minutes: duration_minutes ? parseInt(String(duration_minutes)) : null,
+      body_weight: typeof body_weight === "number" && body_weight > 0 ? body_weight : null,
       workout_exercises: {
         create: exercises.map((ex: { exercise_id: string; order?: number; sets: { set_number: number; reps: string; weight: string }[] }, i: number) => ({
           exercise_id: ex.exercise_id,
@@ -87,6 +96,21 @@ export async function POST(request: Request) {
     },
     select: { id: true },
   });
+
+  // Smart sync: update User.weight_lbs only if this is the latest workout with body_weight
+  if (typeof body_weight === "number" && body_weight > 0) {
+    const latest = await prisma.workout.findFirst({
+      where: { user_id: user.id, body_weight: { not: null } },
+      orderBy: { date: "desc" },
+      select: { id: true, body_weight: true },
+    });
+    if (latest && latest.id === workout.id) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { weight_lbs: Math.round(body_weight) },
+      });
+    }
+  }
 
   return NextResponse.json(workout, { status: 201 });
 }

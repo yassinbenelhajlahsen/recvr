@@ -93,6 +93,9 @@ export async function calculateRecovery(userId: string): Promise<MuscleRecovery[
         : workout.date;
     const hoursSince = (now.getTime() - workoutTime.getTime()) / (1000 * 60 * 60);
 
+    // Skip future-dated workouts — they haven't happened yet, no fatigue
+    if (hoursSince < 0) continue;
+
     // Aggregate volume and exercises per muscle group within this workout
     const muscleVolume = new Map<string, number>();
     const muscleSets = new Map<string, number>();
