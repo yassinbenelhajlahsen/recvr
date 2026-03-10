@@ -59,6 +59,17 @@ npx prisma studio        # Open Prisma Studio (DB GUI)
 - Example: `sets: { select: { id: true, set_number: true, reps: true, weight: true } }` instead of `sets: true` (avoids sending `workout_exercise_id`, `created_at`, etc.)
 - For the workout list (dashboard), only `{ id: true }` is needed for sets (just counting them)
 
+### Seeding
+
+- `prisma/seed.ts` **never deletes** default exercises — `WorkoutExercise` has `onDelete: Cascade` on the exercise FK, so deleting exercises cascades and wipes all sets. Instead the seed fetches existing names, inserts missing exercises, and updates `muscle_groups`/`equipment` on existing ones.
+- Safe to re-run at any time without losing user workout data.
+
+### Muscle group naming
+
+- Stored as a string array in Postgres (e.g. `["core", "abs"]`). `"core"` and `"abs"` are separate values — never `"core/Abs"` or similar.
+- Search uses `hasSome: [query]` for exact muscle name matching (case-sensitive, so values are always lowercase).
+- Both `/api/exercises` and the dashboard workout filter search by name OR muscle group — typing `"core"` or `"abs"` returns matching results.
+
 ## Design System
 
 - **Fonts**: Fraunces (display/headlines, `font-display`), Geist Sans (body/UI, `font-sans`)
@@ -156,7 +167,7 @@ prisma/
 - **No new DB tables** — computed on-the-fly from last 96h workouts via `calculateRecovery(userId)` in `src/lib/recovery.ts`
 - **Algorithm**: `volume_factor = clamp(volume / 5000, 0.8, 1.5)`, `adjusted_hours = 48 * factor`, `pct = clamp(hours_since / adjusted_hours, 0, 1)`
 - **Status thresholds**: `recovered` ≥ 0.85, `partial` ≥ 0.45, `fatigued` < 0.45
-- **16 muscle groups**: chest, triceps, shoulders, lower back, hamstrings, glutes, traps, back, biceps, rear shoulders, quadriceps, calves, forearms, core, hip flexors, tibialis
+- **16 muscle groups**: chest, triceps, shoulders, lower back, hamstrings, glutes, traps, back, biceps, rear shoulders, quadriceps, calves, forearms, core, abs, hip flexors, tibialis
 - **Multi-workout logic**: tracks worst (most fatigued) result per muscle across all workouts in window
 - **SVG body maps**: `@mjcdev/react-body-highlighter` library; `recoveryColors.ts` does HSL interpolation (red→yellow→green) for fill colors
 - **Dashboard integration**: `RecoveryPanel` is a sticky right-column sidebar; recovery data is fetched in parallel with workouts in `dashboard/page.tsx`
