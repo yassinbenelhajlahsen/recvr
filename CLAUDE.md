@@ -22,7 +22,7 @@ npx prisma studio        # Open Prisma Studio (DB GUI)
 
 - **Client Components**: use `createClient()` from `@/lib/supabase/client`
 - **Server Components / Route Handlers**: use `await createClient()` from `@/lib/supabase/server`
-- **Middleware**: session refresh is handled in `src/middleware.ts` via `updateSession()`
+- **Middleware**: session refresh is handled in `src/proxy.ts` (Next.js 16 `proxy` export), which calls `updateSession()` from `src/lib/supabase/middleware.ts`
 - After `signInWithPassword`, call `ensureUserInDb(user)` from `@/lib/supabase/ensure-user` to sync user to Prisma DB
 - OAuth and email confirmation flows sync user via `src/app/auth/callback/route.ts`
 - **OAuth callback upsert**: use `where: { email }` (not `id`) to avoid P2002 unique constraint errors when a user has previously signed up with email/password and then signs in with OAuth (same email, different Supabase user ID). The `update` sets `id` to the OAuth user's ID to keep the DB in sync.
@@ -61,7 +61,7 @@ npx prisma studio        # Open Prisma Studio (DB GUI)
 
 ## Design System
 
-- **Fonts**: Instrument Serif (display/headlines, `font-display`), Geist Sans (body/UI, `font-sans`)
+- **Fonts**: Fraunces (display/headlines, `font-display`), Geist Sans (body/UI, `font-sans`)
 - **Color tokens**: defined as CSS custom properties in `globals.css` (:root + .dark), mapped to Tailwind via `@theme inline`
 - **Semantic classes**: `bg-bg`, `bg-surface`, `bg-elevated`, `text-primary`, `text-secondary`, `text-muted`, `text-accent`, `bg-accent`, `border-border`, `border-border-subtle`, `text-danger`, `text-success`
 - **Accent color**: terracotta/coral — `#D4552A` (light) / `#E8633A` (dark) — reserved for primary CTAs and interactive highlights
@@ -83,10 +83,7 @@ npx prisma studio        # Open Prisma Studio (DB GUI)
 ## Routing
 
 - `/` → redirects to `/dashboard`
-- `/dashboard` — the main screen: greeting, log workout CTA, filters, full workout list, modals (DashboardClient)
-- `/workouts` → redirects to `/dashboard` (preserves search params)
-- `/workouts/[id]` — workout detail (read-only)
-- `/workouts/[id]/edit` — edit workout form
+- `/dashboard` — the main screen: greeting, log workout CTA, filters, full workout list, modals/drawers (DashboardClient)
 
 ## File Structure
 
@@ -96,11 +93,6 @@ src/
 │   ├── layout.tsx              # Root layout (ThemeProvider, Navbar)
 │   ├── page.tsx                # Redirects to /dashboard
 │   ├── dashboard/page.tsx      # Unified main screen (Server Component)
-│   ├── workouts/
-│   │   ├── page.tsx            # Redirects to /dashboard
-│   │   ├── new/page.tsx
-│   │   ├── [id]/page.tsx
-│   │   └── [id]/edit/page.tsx
 │   ├── auth/
 │   │   ├── signin/page.tsx
 │   │   ├── signup/page.tsx
@@ -117,12 +109,15 @@ src/
 │   ├── WorkoutDetailDrawer.tsx # Side drawer for workout details
 │   ├── SessionSummaryModal.tsx # Post-save success modal
 │   ├── DeleteWorkoutButton.tsx
+│   ├── PageTransition.tsx      # Zone-based page transition animations
 │   ├── Navbar.tsx
 │   ├── ThemeProvider.tsx
 │   ├── ThemeToggle.tsx
 │   └── ui/
 │       ├── Modal.tsx
-│       └── Drawer.tsx
+│       ├── Drawer.tsx
+│       ├── FloatingInput.tsx   # Floating label input component
+│       └── PasswordChecklist.tsx # Password validation checklist
 ├── store/
 │   └── workoutStore.ts         # Zustand store for modal state
 ├── lib/
@@ -133,7 +128,7 @@ src/
 │       ├── middleware.ts       # Middleware session refresh
 │       └── ensure-user.ts      # Syncs auth user to DB after sign-in
 ├── generated/prisma/           # Auto-generated Prisma client (gitignored)
-└── middleware.ts               # Route protection
+└── proxy.ts                    # Next.js 16 proxy — route protection via updateSession()
 prisma/
 ├── schema.prisma               # Data models
 ├── seed.ts                     # Default exercises seed
