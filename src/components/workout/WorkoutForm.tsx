@@ -287,6 +287,7 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
   }
 
   const actionButtons = (
+    <div className="space-y-2">
     <div className="flex items-center gap-4">
       <button
         onClick={handleSubmit}
@@ -311,6 +312,8 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
           Cancel
         </Link>
       )}
+    </div>
+    {error && <p className="text-sm text-danger font-medium">{error}</p>}
     </div>
   );
 
@@ -624,8 +627,6 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
           </button>
         )}
       </div>
-
-      {error && <p className="text-sm text-danger font-medium">{error}</p>}
 
       {!isEdit && actionButtons}
     </div>

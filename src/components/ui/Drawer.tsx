@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { flushSync } from "react-dom";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { DrawerProps } from "@/types/ui";
 
@@ -9,21 +8,27 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
 
+  // useLayoutEffect runs synchronously after DOM mutations, before paint —
+  // this guarantees the drawer is in the DOM with translate-x-full before
+  // any rAF fires, giving the CSS transition a start state to animate from.
+  useLayoutEffect(() => {
+    if (open) setMounted(true);
+  }, [open]);
+
   /* eslint-disable react-hooks/set-state-in-effect -- portal mount/unmount + animation requires effect-driven setState */
   useEffect(() => {
-    if (open) {
-      flushSync(() => setMounted(true));
+    if (open && mounted) {
       let raf2: number;
       const raf = requestAnimationFrame(() => {
         raf2 = requestAnimationFrame(() => setVisible(true));
       });
       return () => { cancelAnimationFrame(raf); cancelAnimationFrame(raf2); };
-    } else {
+    } else if (!open) {
       setVisible(false);
       const t = setTimeout(() => setMounted(false), 300);
       return () => clearTimeout(t);
     }
-  }, [open]);
+  }, [open, mounted]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {

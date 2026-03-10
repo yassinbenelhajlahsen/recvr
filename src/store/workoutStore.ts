@@ -1,29 +1,41 @@
 import { create } from "zustand";
 import type { WorkoutPreview, SessionSummaryData } from "@/types/workout";
 
-type ModalName = "exerciseDrawer" | "sessionSummary";
+export type DrawerView = "create" | "view" | "edit" | "summary";
 
 interface WorkoutStore {
-  activeModal: ModalName | null;
+  isDrawerOpen: boolean;
+  drawerView: DrawerView | null;
   selectedWorkoutId: string | null;
   activeSession: SessionSummaryData | null;
   previewData: WorkoutPreview | null;
-  openModal: (name: ModalName, workoutId?: string, preview?: WorkoutPreview) => void;
-  closeModal: () => void;
+  openDrawer: (workoutId?: string, preview?: WorkoutPreview) => void;
+  closeDrawer: () => void;
+  setDrawerView: (view: DrawerView, session?: SessionSummaryData) => void;
 }
 
 export const useWorkoutStore = create<WorkoutStore>((set) => ({
-  activeModal: null,
+  isDrawerOpen: false,
+  drawerView: null,
   selectedWorkoutId: null,
   activeSession: null,
   previewData: null,
-  openModal: (name, workoutId, preview) =>
+  openDrawer: (workoutId, preview) =>
     set({
-      activeModal: name,
+      isDrawerOpen: true,
+      drawerView: workoutId ? "view" : "create",
       selectedWorkoutId: workoutId ?? null,
       activeSession: null,
       previewData: preview ?? null,
     }),
-  closeModal: () =>
-    set({ activeModal: null, selectedWorkoutId: null, activeSession: null, previewData: null }),
+  closeDrawer: () =>
+    set({
+      isDrawerOpen: false,
+      drawerView: null,
+      selectedWorkoutId: null,
+      activeSession: null,
+      previewData: null,
+    }),
+  setDrawerView: (view, session) =>
+    set((s) => ({ drawerView: view, activeSession: session ?? s.activeSession })),
 }));

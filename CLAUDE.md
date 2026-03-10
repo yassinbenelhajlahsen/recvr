@@ -143,16 +143,12 @@ src/
 │       ├── user/profile/route.ts # GET + PUT user profile (height, weight, goal, onboarding)
 │       └── user/delete/route.ts  # DELETE user account (Supabase Admin + Prisma cascade)
 ├── components/
-│   ├── DashboardClient.tsx     # Main client component (list + modals + recovery panel)
-│   ├── WorkoutForm.tsx         # Create/edit workout form
-│   ├── WorkoutsFilter.tsx      # Search + date range filters
-│   ├── WorkoutDetailDrawer.tsx # Side drawer for workout details
-│   ├── SessionSummaryModal.tsx # Post-save success modal
-│   ├── DeleteWorkoutButton.tsx
-│   ├── PageTransition.tsx      # Zone-based page transition animations
-│   ├── Navbar.tsx
-│   ├── ThemeProvider.tsx
-│   ├── ThemeToggle.tsx
+│   ├── DashboardClient.tsx     # Main client component (list + drawer + recovery panel)
+│   ├── workout/
+│   │   ├── WorkoutDetailDrawer.tsx # Drawer with 4 views: create/view/edit/summary (AnimatePresence)
+│   │   ├── WorkoutForm.tsx     # Create/edit workout form
+│   │   ├── WorkoutsFilter.tsx  # Search + date range filters
+│   │   └── DeleteWorkoutButton.tsx
 │   ├── recovery/
 │   │   ├── RecoveryPanel.tsx   # Dashboard sidebar: dual body maps + status list
 │   │   ├── RecoveryView.tsx    # Full-page recovery view
@@ -161,20 +157,30 @@ src/
 │   │   ├── BodyMapBack.tsx     # Back SVG body map
 │   │   ├── MuscleDetailPanel.tsx # Tap-to-inspect muscle stats panel
 │   │   └── recoveryColors.ts  # HSL fill interpolation + status color/label maps
-│   ├── UserMenu.tsx            # Avatar dropdown: theme toggle, settings, sign out
-│   ├── MetricsInputs.tsx       # Reusable height/weight input fields (used in onboarding + settings)
-│   ├── OnboardingFlow.tsx      # Multi-step onboarding form (name, body metrics, goal)
+│   ├── layout/
+│   │   ├── Navbar.tsx          # Top nav bar (logo, nav links, avatar button)
+│   │   ├── UserMenu.tsx        # Avatar dropdown: theme toggle, settings, sign out
+│   │   ├── ThemeProvider.tsx   # Theme context + useTheme hook
+│   │   ├── ThemeToggle.tsx     # Theme toggle button
+│   │   └── PageTransition.tsx  # Zone-based page transition animations
+│   ├── onboarding/
+│   │   ├── OnboardingFlow.tsx  # Multi-step onboarding form (name, body metrics, goal)
+│   │   └── MetricsInputs.tsx   # Reusable height/weight input fields
 │   ├── settings/
-│   │   └── SettingsDrawer.tsx  # Settings drawer: profile, body metrics, goals (all functional)
+│   │   ├── SettingsDrawer.tsx  # Settings drawer: profile, body metrics, goals (all functional)
+│   │   ├── AccountTab.tsx      # Profile + account deletion tab
+│   │   ├── FitnessTab.tsx      # Body metrics + goals tab
+│   │   └── SectionHeader.tsx   # Shared section header component
 │   └── ui/
 │       ├── Modal.tsx
-│       ├── Drawer.tsx
+│       ├── Drawer.tsx          # flushSync on open to fix first-open animation (React 18)
 │       ├── DropdownMenu.tsx    # Portal dropdown: DropdownMenu, DropdownMenuItem, DropdownMenuDivider
 │       ├── FloatingInput.tsx   # Floating label input component
 │       └── PasswordChecklist.tsx # Password validation checklist
 ├── store/
-│   ├── workoutStore.ts         # Zustand store (modal state, preview data, session summary)
-│   └── appStore.ts             # Zustand store (app-wide: isOnboarding flag)
+│   ├── workoutStore.ts         # Drawer state (isDrawerOpen, drawerView, openDrawer, closeDrawer, setDrawerView)
+│   ├── appStore.ts             # App-wide state (isOnboarding flag)
+│   └── clientStore.ts          # Client hydration state (mounted, isDark) — MutationObserver on <html> class
 ├── lib/
 │   ├── prisma.ts               # Singleton PrismaClient
 │   ├── recovery.ts             # calculateRecovery(userId) — recovery engine (no new DB tables)
@@ -208,13 +214,20 @@ prisma/
 
 ## State Management (Zustand)
 
-- **`src/store/workoutStore.ts`** — manages modal/drawer state, workout preview data, and session summary data
+- **`src/store/workoutStore.ts`** — drawer state, view routing, workout preview data, and session summary data
+  - `isDrawerOpen: boolean` — whether `WorkoutDetailDrawer` is open
+  - `drawerView: DrawerView | null` — current view inside the drawer: `"create" | "view" | "edit" | "summary"`
+  - `openDrawer(workoutId?, preview?)` — opens drawer; no ID → `"create"`, with ID → `"view"`
+  - `closeDrawer()` — closes and resets all drawer state
+  - `setDrawerView(view, session?)` — transitions between views; used to go create → summary, view → edit, etc.
+  - `activeSession: SessionSummaryData | null` — set on save, read by the summary view
+  - `previewData: WorkoutPreview | null` — instant preview from card click while full detail loads
 - **`src/store/appStore.ts`** — app-wide state: `isOnboarding` flag (used by Navbar to hide nav links during onboarding flow)
-- **Key types**: `SessionSummaryData` (full workout data for post-save modal), `WorkoutPreview` (summary from list for instant drawer preview)
-- **Pattern — pass data through store, not refetch**: When navigating between views (e.g., form save → summary modal, card click → drawer), pass available data via the store instead of fetching from the API. Components render immediately with the data they have.
-  - `SessionSummaryModal`: reads `activeSession` directly from store (no fetch)
-  - `WorkoutDetailDrawer`: uses `previewData` from card click to render instant preview (date, exercise names, stats) while full detail loads; uses `onSave` data after edit to update view without refetching
-  - `WorkoutForm.onSave`: passes full workout data (date, exercises, sets) constructed from local state — consumers should use this instead of refetching
+- **`src/store/clientStore.ts`** — client-only hydration state: `mounted` (true after first client render) and `isDark` (mirrors `document.documentElement.classList`). Uses a `MutationObserver` to stay in sync with theme class changes. Call `hydrate()` once in a top-level client component; returns a cleanup function. Used to avoid SSR hydration mismatches for theme-dependent rendering.
+- **Key types**: `SessionSummaryData` (full workout data for the summary view), `WorkoutPreview` (summary from list for instant drawer preview)
+- **Pattern — pass data through store, not refetch**: When navigating between views (e.g., form save → summary, card click → drawer), pass available data via the store instead of fetching from the API. Components render immediately with the data they have.
+  - `WorkoutDetailDrawer`: summary view reads `activeSession` directly (no fetch); uses `previewData` from card click for instant skeleton preview while full detail loads; after edit save, updates local `workout` state from `onSave` data without refetching
+  - `WorkoutForm.onSave`: passes full workout data constructed from local state — consumers use this instead of refetching
 - **Exercise search cache**: `WorkoutForm` uses a `useRef<Map<string, Exercise[]>>` to cache `/api/exercises` search results per query. Cache is cleared after creating a custom exercise.
 
 ## Navbar & User Menu

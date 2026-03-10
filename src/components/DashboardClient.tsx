@@ -4,13 +4,12 @@ import { Suspense } from "react";
 import { motion } from "framer-motion";
 import { useWorkoutStore } from "@/store/workoutStore";
 import { WorkoutDetailDrawer } from "@/components/workout/WorkoutDetailDrawer";
-import { SessionSummaryModal } from "@/components/workout/SessionSummaryModal";
 import { WorkoutsFilter } from "@/components/workout/WorkoutsFilter";
 import { RecoveryPanel } from "@/components/recovery/RecoveryPanel";
 import type { DashboardClientProps as Props } from "@/types/workout";
 
 export function DashboardClient({ displayName, workouts, hasFilters, recovery }: Props) {
-  const openModal = useWorkoutStore((s) => s.openModal);
+  const openDrawer = useWorkoutStore((s) => s.openDrawer);
 
   const firstName = displayName?.split(/[\s@]/)[0];
 
@@ -33,7 +32,7 @@ export function DashboardClient({ displayName, workouts, hasFilters, recovery }:
                 </p>
               </div>
               <button
-                onClick={() => openModal("exerciseDrawer")}
+                onClick={() => openDrawer()}
                 className="flex items-center gap-1.5 bg-accent text-white text-sm font-semibold rounded-lg px-4 py-2.5 hover:bg-accent-hover transition-colors shrink-0"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -61,7 +60,7 @@ export function DashboardClient({ displayName, workouts, hasFilters, recovery }:
                 </p>
                 {!hasFilters && (
                   <button
-                    onClick={() => openModal("exerciseDrawer")}
+                    onClick={() => openDrawer()}
                     className="inline-block mt-2 text-sm font-semibold text-accent hover:underline"
                   >
                     Log your first workout
@@ -82,7 +81,7 @@ export function DashboardClient({ displayName, workouts, hasFilters, recovery }:
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2, delay: i * 0.04, ease: "easeOut" }}
-                      onClick={() => openModal("exerciseDrawer", w.id, w)}
+                      onClick={() => openDrawer(w.id, w)}
                       className="group w-full text-left block rounded-xl bg-surface border border-border-subtle px-6 py-5 hover:bg-elevated hover:shadow-md transition-all"
                     >
                       <div className="flex items-start justify-between gap-4">
@@ -132,8 +131,6 @@ export function DashboardClient({ displayName, workouts, hasFilters, recovery }:
       {/* Workout detail drawer (create + view + edit) */}
       <WorkoutDetailDrawer />
 
-      {/* Session summary modal */}
-      <SessionSummaryModal />
     </>
   );
 }
