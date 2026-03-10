@@ -97,6 +97,10 @@ export default async function DashboardPage({
     calculateRecovery(userId),
   ]);
 
+  if (dbUser && !dbUser.onboarding_completed) {
+    redirect("/onboarding");
+  }
+
   const displayName = dbUser?.name || userEmail;
 
   const serializedWorkouts = workouts.map((w) => ({

@@ -67,7 +67,8 @@ export async function POST(request: Request) {
   const workout = await prisma.workout.create({
     data: {
       user_id: user.id,
-      date: date ? new Date(date) : new Date(),
+      // Attach current time to date-only strings (avoids midnight UTC storage which skews recovery)
+      date: date ? new Date(`${date}T${new Date().toISOString().slice(11)}`) : new Date(),
       notes: notes || null,
       duration_minutes: duration_minutes ? parseInt(String(duration_minutes)) : null,
       workout_exercises: {
