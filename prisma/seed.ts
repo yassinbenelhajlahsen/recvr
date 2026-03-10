@@ -11,18 +11,36 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log("Seeding default exercises…");
 
-  // Delete existing defaults, then recreate (idempotent)
-  await prisma.exercise.deleteMany({ where: { user_id: null } });
-  await prisma.exercise.createMany({
-    data: DEFAULT_EXERCISES.map((e) => ({
-      name: e.name,
-      muscle_groups: e.muscle_groups,
-      equipment: e.equipment,
-      user_id: null,
-    })),
+  // Never delete — cascade would wipe WorkoutExercise + Set rows.
+  // Instead: insert new exercises and update changed fields on existing ones.
+  const existing = await prisma.exercise.findMany({
+    where: { user_id: null },
+    select: { id: true, name: true },
   });
+  const existingByName = new Map(existing.map((e) => [e.name, e.id]));
 
-  console.log(`Seeded ${DEFAULT_EXERCISES.length} default exercises.`);
+  const toInsert = DEFAULT_EXERCISES.filter((e) => !existingByName.has(e.name));
+  const toUpdate = DEFAULT_EXERCISES.filter((e) => existingByName.has(e.name));
+
+  if (toInsert.length > 0) {
+    await prisma.exercise.createMany({
+      data: toInsert.map((e) => ({
+        name: e.name,
+        muscle_groups: e.muscle_groups,
+        equipment: e.equipment,
+        user_id: null,
+      })),
+    });
+  }
+
+  for (const e of toUpdate) {
+    await prisma.exercise.update({
+      where: { id: existingByName.get(e.name)! },
+      data: { muscle_groups: e.muscle_groups, equipment: e.equipment },
+    });
+  }
+
+  console.log(`Done — ${toInsert.length} inserted, ${toUpdate.length} updated.`);
 }
 
 main()
