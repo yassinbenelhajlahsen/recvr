@@ -104,16 +104,23 @@ export function AccountTab({ user, open, onClose }: AccountTabProps) {
 
   async function handleSaveProfile() {
     setSaving(true);
-    await fetch("/api/user/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: name.trim() || null,
-        height_inches: user.height_inches,
-        weight_lbs: user.weight_lbs,
-        fitness_goals: user.fitness_goals ?? [],
+    const trimmedName = name.trim() || null;
+    const supabase = createClient();
+    await Promise.all([
+      fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: trimmedName,
+          height_inches: user.height_inches,
+          weight_lbs: user.weight_lbs,
+          fitness_goals: user.fitness_goals ?? [],
+        }),
       }),
-    });
+      supabase.auth.updateUser({
+        data: { full_name: trimmedName },
+      }),
+    ]);
     setSaving(false);
     onClose();
     router.refresh();
