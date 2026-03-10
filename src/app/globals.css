@@ -87,3 +87,13 @@ body {
   background-color: var(--c-accent);
   color: white;
 }
+
+/* Chrome autofill override — outside @layer to beat Tailwind utilities */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--c-elevated) inset;
+  -webkit-text-fill-color: var(--c-text);
+  caret-color: var(--c-text);
+  transition: background-color 9999s ease-in-out 0s;
+}
