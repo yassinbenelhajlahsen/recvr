@@ -52,8 +52,10 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
       }}
     >
       <div
-        className={`relative flex flex-col w-full max-w-md h-full bg-elevated shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-          visible ? "translate-x-0" : "translate-x-full"
+        className={`relative flex flex-col w-full max-w-md h-full bg-elevated shadow-2xl transition-transform ${
+          visible
+            ? "duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] translate-x-0"
+            : "duration-250 ease-[cubic-bezier(0.4,0,1,1)] translate-x-full"
         }`}
       >
         {/* Sticky header */}

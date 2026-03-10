@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Drawer } from "@/components/ui/Drawer";
@@ -119,6 +119,13 @@ export function WorkoutDetailDrawer() {
     : loading ? " "
     : undefined;
 
+  // Freeze the title during close animation — closeDrawer() resets drawerView
+  // immediately, which would drop the title to undefined and collapse the header
+  // before the drawer finishes sliding out.
+  const frozenTitle = useRef<string | undefined>(undefined);
+  if (drawerTitle !== undefined) frozenTitle.current = drawerTitle;
+  const effectiveTitle = isDrawerOpen ? drawerTitle : frozenTitle.current;
+
   const totalSets =
     workout?.workout_exercises.reduce((sum, we) => sum + we.sets.length, 0) ?? 0;
 
@@ -145,7 +152,7 @@ export function WorkoutDetailDrawer() {
     : undefined;
 
   return (
-    <Drawer open={isDrawerOpen} onClose={closeDrawer} title={drawerTitle}>
+    <Drawer open={isDrawerOpen} onClose={closeDrawer} title={effectiveTitle}>
       <div className="px-5 py-5">
         <AnimatePresence mode="wait" initial={false}>
 
