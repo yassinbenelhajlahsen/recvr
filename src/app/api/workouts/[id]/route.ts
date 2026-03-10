@@ -59,7 +59,9 @@ export async function PUT(
   const workout = await prisma.workout.update({
     where: { id },
     data: {
-      date: date ? new Date(`${date}T${new Date().toISOString().slice(11)}`) : existing.date,
+      date: date && date !== existing.date.toISOString().split("T")[0]
+        ? new Date(`${date}T${new Date().toISOString().slice(11)}`)
+        : existing.date,
       notes: notes || null,
       duration_minutes: duration_minutes ? parseInt(String(duration_minutes)) : null,
       workout_exercises: {
