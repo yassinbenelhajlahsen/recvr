@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Drawer } from "@/components/ui/Drawer";
 import { DeleteWorkoutButton } from "@/components/DeleteWorkoutButton";
 import { WorkoutForm } from "@/components/WorkoutForm";
-import { useWorkoutStore } from "@/store/workoutStore";
+import { useWorkoutStore, SessionSummaryData } from "@/store/workoutStore";
 
 type SetData = { id: string; set_number: number; reps: number; weight: number };
 type ExerciseData = { id: string; name: string; muscle_groups: string[] };
@@ -56,7 +56,7 @@ export function WorkoutDetailDrawer() {
       .finally(() => setLoading(false));
   }, [open, selectedWorkoutId]);
 
-  function handleCreateSave(data: { id: string }) {
+  function handleCreateSave(data: SessionSummaryData) {
     useWorkoutStore.setState({ activeModal: "sessionSummary", activeSession: data });
   }
 

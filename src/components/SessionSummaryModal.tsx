@@ -1,23 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import { useWorkoutStore } from "@/store/workoutStore";
-
-type SetData = { id: string; set_number: number; reps: number; weight: number };
-type WorkoutExercise = {
-  id: string;
-  exercise: { name: string; muscle_groups: string[] };
-  sets: SetData[];
-};
-type WorkoutDetail = {
-  id: string;
-  date: string;
-  duration_minutes: number | null;
-  notes: string | null;
-  workout_exercises: WorkoutExercise[];
-};
 
 function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -33,20 +18,7 @@ export function SessionSummaryModal() {
   const router = useRouter();
   const open = activeModal === "sessionSummary" && !!activeSession;
 
-  const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!open || !activeSession) {
-      setWorkout(null);
-      return;
-    }
-    setLoading(true);
-    fetch(`/api/workouts/${activeSession.id}`)
-      .then((r) => r.json())
-      .then(setWorkout)
-      .finally(() => setLoading(false));
-  }, [open, activeSession]);
+  const workout = open ? activeSession : null;
 
   const totalSets =
     workout?.workout_exercises.reduce((sum, we) => sum + we.sets.length, 0) ?? 0;
@@ -80,22 +52,12 @@ export function SessionSummaryModal() {
             </svg>
           </div>
           <h2 className="font-display text-2xl text-primary">Workout logged</h2>
-          {workout ? (
+          {workout && (
             <p className="text-sm text-secondary">{formatDate(workout.date)}</p>
-          ) : (
-            <div className="h-4 bg-surface rounded animate-pulse w-32 mx-auto" />
           )}
         </div>
 
-        {/* Stats */}
-        {loading && (
-          <div className="grid grid-cols-2 gap-3 animate-pulse">
-            <div className="h-20 bg-surface rounded-xl" />
-            <div className="h-20 bg-surface rounded-xl" />
-          </div>
-        )}
-
-        {!loading && workout && (
+        {workout && (
           <>
             <div className="grid grid-cols-2 gap-3">
               {workout.duration_minutes && (

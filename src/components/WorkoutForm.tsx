@@ -37,7 +37,17 @@ export type WorkoutFormInitialData = {
 type Props = {
   workoutId?: string;
   initialData?: WorkoutFormInitialData;
-  onSave?: (data: { id: string }) => void;
+  onSave?: (data: {
+    id: string;
+    date: string;
+    duration_minutes: number | null;
+    notes: string | null;
+    workout_exercises: {
+      id: string;
+      exercise: { name: string; muscle_groups: string[] };
+      sets: { id: string; set_number: number; reps: number; weight: number }[];
+    }[];
+  }) => void;
   onCancel?: () => void;
   compact?: boolean;
 };
@@ -273,7 +283,22 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
       if (!res.ok) throw new Error();
       const { id } = await res.json();
       if (onSave) {
-        onSave({ id });
+        onSave({
+          id,
+          date,
+          duration_minutes: duration ? Number(duration) : null,
+          notes: notes || null,
+          workout_exercises: exercises.map((ex, i) => ({
+            id: `local-we-${i}`,
+            exercise: { name: ex.exercise_name, muscle_groups: ex.muscle_groups },
+            sets: ex.sets.map((s) => ({
+              id: s.id,
+              set_number: s.set_number,
+              reps: Number(s.reps),
+              weight: Number(s.weight),
+            })),
+          })),
+        });
       } else {
         router.push(`/workouts/${id}`);
         router.refresh();
