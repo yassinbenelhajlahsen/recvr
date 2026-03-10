@@ -4,13 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FloatingInput } from "@/components/ui/FloatingInput";
+import { GoalSelector } from "@/components/ui/GoalSelector";
 import { MetricsInputs } from "./MetricsInputs";
 import { useAppStore } from "@/store/appStore";
 import { createClient } from "@/lib/supabase/client";
 import type { UnitSystem } from "@/types/user";
 import { resolveHeightToInches, resolveWeightToLbs } from "@/lib/units";
-
-const GOALS = ["Strength", "Hypertrophy", "Endurance", "Fat Loss"] as const;
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
@@ -51,8 +50,7 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
   const [weight, setWeight] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
   const [customGoal, setCustomGoal] = useState("");
-  const isCustomMode =
-    goals.length === 1 && !GOALS.includes(goals[0] as (typeof GOALS)[number]);
+  const isCustomMode = customGoal.trim().length > 0;
 
   function toggleGoal(g: string) {
     setCustomGoal("");
@@ -207,46 +205,17 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
               </div>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {GOALS.map((g) => {
-                    const selected = goals.includes(g);
-                    const disabled = !selected && goals.length >= 3;
-                    return (
-                      <button
-                        key={g}
-                        type="button"
-                        onClick={() => toggleGoal(g)}
-                        disabled={disabled || isCustomMode}
-                        className={`px-4 py-3 rounded-xl border text-sm font-medium transition-colors duration-150 ${
-                          selected
-                            ? "bg-accent text-white border-accent"
-                            : "bg-surface border-border-subtle text-primary hover:border-border disabled:opacity-40 disabled:pointer-events-none"
-                        }`}
-                      >
-                        {g}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted uppercase tracking-wider">
-                    or
-                  </span>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
-
-                <FloatingInput
-                  id="onboarding-custom-goal"
-                  type="text"
-                  label="Custom goal"
-                  value={customGoal}
-                  onChange={(e) => {
-                    setCustomGoal(e.target.value);
-                    if (e.target.value.trim()) setGoals([]);
+                <GoalSelector
+                  goals={goals}
+                  customGoal={customGoal}
+                  onToggleGoal={toggleGoal}
+                  onCustomGoalChange={(value) => {
+                    setCustomGoal(value);
+                    if (value.trim()) setGoals([]);
                   }}
-                  required={false}
+                  isCustomMode={isCustomMode}
+                  inputId="onboarding-custom-goal"
+                  showDivider={true}
                 />
 
                 <motion.button

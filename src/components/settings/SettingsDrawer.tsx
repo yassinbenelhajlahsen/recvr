@@ -65,7 +65,7 @@ export function SettingsDrawer({ open, onClose, user }: SettingsDrawerProps) {
             <AccountTab user={user} open={open} onClose={onClose} />
           )}
           {tab === "fitness" && (
-            <FitnessTab user={user} onClose={onClose} />
+            <FitnessTab user={user} open={open} onClose={onClose} />
           )}
         </motion.div>
       </AnimatePresence>

@@ -77,5 +77,6 @@ export interface SettingsDrawerProps {
 
 export interface FitnessTabProps {
   user: UserProfile;
+  open: boolean;
   onClose: () => void;
 }
