@@ -40,6 +40,14 @@ export function Navbar() {
         </Link>
 
         <div className="absolute right-2 flex items-center gap-1">
+          {user && (
+            <Link
+              href="/recovery"
+              className="text-sm font-medium text-muted hover:text-primary px-3 py-2 rounded-lg hover:bg-surface transition-colors"
+            >
+              Recovery
+            </Link>
+          )}
           <ThemeToggle />
           {user && (
             <button
