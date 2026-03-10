@@ -90,12 +90,7 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-[calc(100dvh-65px)] flex items-center justify-center px-4">
-      <motion.div
-        className="w-full max-w-[360px]"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
-      >
+      <div className="w-full max-w-[360px]">
         {/* Reset-sent confirmation */}
         <AnimatePresence mode="wait" initial={false}>
           {view === "reset-sent" && (
@@ -286,9 +281,10 @@ export default function SignInPage() {
                     </AnimatePresence>
 
                     <div className="pt-1">
-                      <button
+                      <motion.button
                         type="submit"
                         disabled={loading}
+                        whileTap={{ scale: 0.97 }}
                         className="relative w-full rounded-xl bg-accent hover:bg-accent-hover text-white text-[15px] font-semibold py-[13px] transition-colors duration-150 disabled:opacity-50 overflow-hidden"
                       >
                         <AnimatePresence mode="wait" initial={false}>
@@ -303,7 +299,7 @@ export default function SignInPage() {
                             {loading ? "Signing in…" : "Sign in"}
                           </motion.span>
                         </AnimatePresence>
-                      </button>
+                      </motion.button>
                     </div>
                   </form>
 
@@ -318,7 +314,7 @@ export default function SignInPage() {
             </AnimatePresence>
           </div>
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }

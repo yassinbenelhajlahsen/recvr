@@ -73,12 +73,7 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-[calc(100dvh-65px)] flex items-center justify-center px-4 py-8">
-      <motion.div
-        className="w-full max-w-[360px] space-y-6"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
-      >
+      <div className="w-full max-w-[360px] space-y-6">
         {/* Header */}
         <div className="text-center space-y-1">
           <h1 className="font-display text-4xl text-primary">Create account</h1>
@@ -191,9 +186,10 @@ export default function SignUpPage() {
           </AnimatePresence>
 
           <div className="pt-1">
-            <button
+            <motion.button
               type="submit"
               disabled={loading}
+              whileTap={{ scale: 0.97 }}
               className="relative w-full rounded-xl bg-accent hover:bg-accent-hover text-white text-[15px] font-semibold py-[13px] transition-colors duration-150 disabled:opacity-50 overflow-hidden"
             >
               <AnimatePresence mode="wait" initial={false}>
@@ -208,7 +204,7 @@ export default function SignUpPage() {
                   {loading ? "Creating account…" : "Create account"}
                 </motion.span>
               </AnimatePresence>
-            </button>
+            </motion.button>
           </div>
         </form>
 
@@ -218,7 +214,7 @@ export default function SignUpPage() {
             Sign in
           </Link>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
