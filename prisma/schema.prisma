@@ -40,6 +40,7 @@ model Workout {
   date             DateTime @default(now())
   notes            String?
   duration_minutes Int?
+  body_weight      Float?
 
   user              User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
   workout_exercises WorkoutExercise[]
