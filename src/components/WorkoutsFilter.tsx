@@ -47,8 +47,12 @@ export function WorkoutsFilter() {
   const [isPending, startTransition] = useTransition();
 
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
-  const [datePreset, setDatePreset] = useState(searchParams.get("datePreset") ?? "");
-  const [muscles, setMuscles] = useState<string[]>(parseMuscles(searchParams.get("muscles")));
+  const [datePreset, setDatePreset] = useState(
+    searchParams.get("datePreset") ?? "",
+  );
+  const [muscles, setMuscles] = useState<string[]>(
+    parseMuscles(searchParams.get("muscles")),
+  );
 
   // Refs so debounced search can read latest date/muscles without re-creating the timer
   const datePresetRef = useRef(datePreset);
@@ -80,7 +84,9 @@ export function WorkoutsFilter() {
   }
 
   function toggleMuscle(m: string) {
-    const next = muscles.includes(m) ? muscles.filter((x) => x !== m) : [...muscles, m];
+    const next = muscles.includes(m)
+      ? muscles.filter((x) => x !== m)
+      : [...muscles, m];
     setMuscles(next);
     musclesRef.current = next;
     push(search, datePresetRef.current, next);
@@ -110,7 +116,9 @@ export function WorkoutsFilter() {
   const hiddenCount = extraMuscles.length;
 
   return (
-    <div className={`space-y-3 transition-opacity duration-300 ${isPending ? "opacity-50" : "opacity-100"}`}>
+    <div
+      className={`space-y-3 transition-opacity duration-300 ${isPending ? "opacity-50" : "opacity-100"}`}
+    >
       {/* Row: search + date preset */}
       <div className="flex flex-col sm:flex-row gap-2">
         <input
@@ -121,24 +129,39 @@ export function WorkoutsFilter() {
           className="flex-1 rounded-lg border border-border bg-elevated px-3.5 py-2.5 text-sm text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
         />
 
-        <select
-          value={datePreset}
-          onChange={(e) => handleDateChange(e.target.value)}
-          className="rounded-lg border border-border bg-elevated px-3.5 py-2.5 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors cursor-pointer"
-        >
-          {DATE_PRESETS.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value={datePreset}
+            onChange={(e) => handleDateChange(e.target.value)}
+            className="w-full appearance-none rounded-lg border border-border bg-elevated pl-3.5 pr-9 py-2.5 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors cursor-pointer"
+          >
+            {DATE_PRESETS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+          <svg
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </div>
       </div>
 
       {/* Muscle pills */}
       <div className="flex flex-wrap gap-2 items-center">
         {PINNED_MUSCLES.map((m) => {
           const active = muscles.includes(m);
-          const label = MUSCLE_LABELS[m] ?? m.charAt(0).toUpperCase() + m.slice(1);
+          const label =
+            MUSCLE_LABELS[m] ?? m.charAt(0).toUpperCase() + m.slice(1);
           return (
             <button
               key={m}
@@ -158,7 +181,8 @@ export function WorkoutsFilter() {
           {showAll &&
             extraMuscles.map((m, i) => {
               const active = muscles.includes(m);
-              const label = MUSCLE_LABELS[m] ?? m.charAt(0).toUpperCase() + m.slice(1);
+              const label =
+                MUSCLE_LABELS[m] ?? m.charAt(0).toUpperCase() + m.slice(1);
               return (
                 <motion.button
                   key={m}
