@@ -18,6 +18,7 @@
   --c-border-subtle: #E8E8E3;
   --c-danger: #C53030;
   --c-success: #2D6A4F;
+  --c-recovery-yellow: #B8860B;
 }
 
 .dark {
@@ -33,6 +34,7 @@
   --c-border-subtle: #1E1E1C;
   --c-danger: #E53E3E;
   --c-success: #40916C;
+  --c-recovery-yellow: #D4A017;
 }
 
 @theme inline {
@@ -52,6 +54,7 @@
   --color-border-subtle: var(--c-border-subtle);
   --color-danger: var(--c-danger);
   --color-success: var(--c-success);
+  --color-recovery-yellow: var(--c-recovery-yellow);
 }
 
 /* ─── Display font tuning ─── */
