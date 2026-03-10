@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useTransition } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 const DATE_PRESETS = [
   { label: "All time", value: "" },
@@ -11,21 +12,29 @@ const DATE_PRESETS = [
   { label: "Last 3 months", value: "3months" },
 ];
 
+const PINNED_MUSCLES = ["chest", "back", "glutes", "quadriceps"];
+
 const MUSCLE_GROUPS = [
+  "chest",
   "back",
+  "glutes",
+  "quadriceps",
   "biceps",
   "calves",
-  "chest",
   "core",
-  "glutes",
   "hamstrings",
   "lower back",
-  "quadriceps",
   "rear shoulders",
   "shoulders",
   "traps",
   "triceps",
 ];
+
+const MUSCLE_LABELS: Record<string, string> = {
+  quadriceps: "Quads",
+  "lower back": "Lower Back",
+  "rear shoulders": "Rear Delts",
+};
 
 function parseMuscles(param: string | null): string[] {
   return param ? param.split(",").filter(Boolean) : [];
@@ -35,6 +44,7 @@ export function WorkoutsFilter() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [datePreset, setDatePreset] = useState(searchParams.get("datePreset") ?? "");
@@ -50,7 +60,9 @@ export function WorkoutsFilter() {
     if (s) params.set("search", s);
     if (d) params.set("datePreset", d);
     if (m.length) params.set("muscles", m.join(","));
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
   }
 
   function handleSearchChange(val: string) {
@@ -80,32 +92,26 @@ export function WorkoutsFilter() {
     setMuscles([]);
     datePresetRef.current = "";
     musclesRef.current = [];
-    router.push(pathname);
+    startTransition(() => {
+      router.push(pathname);
+    });
   }
 
-  const COLLAPSED_COUNT = 8;
-  const hiddenMuscles = MUSCLE_GROUPS.slice(COLLAPSED_COUNT);
-  const hasActiveInHidden = hiddenMuscles.some((m) => muscles.includes(m));
+  const extraMuscles = MUSCLE_GROUPS.filter((m) => !PINNED_MUSCLES.includes(m));
+  const hasActiveInExtra = extraMuscles.some((m) => muscles.includes(m));
 
   const [showAll, setShowAll] = useState(false);
 
-  // Auto-expand if a selected muscle is in the hidden rows
+  // Auto-expand if a selected muscle is in the hidden section
   useEffect(() => {
-    if (hasActiveInHidden) setShowAll(true);
-  }, [hasActiveInHidden]);
+    if (hasActiveInExtra) setShowAll(true);
+  }, [hasActiveInExtra]);
 
-  const visibleMuscles = showAll ? MUSCLE_GROUPS : MUSCLE_GROUPS.slice(0, COLLAPSED_COUNT);
-  const hiddenCount = MUSCLE_GROUPS.length - COLLAPSED_COUNT;
-
-  const hasFilters = !!(
-    searchParams.get("search") ||
-    searchParams.get("datePreset") ||
-    searchParams.get("muscles")
-  );
+  const hiddenCount = extraMuscles.length;
 
   return (
-    <div className="space-y-3">
-      {/* Row: search + date preset + clear */}
+    <div className={`space-y-3 transition-opacity duration-300 ${isPending ? "opacity-50" : "opacity-100"}`}>
+      {/* Row: search + date preset */}
       <div className="flex flex-col sm:flex-row gap-2">
         <input
           type="text"
@@ -126,43 +132,73 @@ export function WorkoutsFilter() {
             </option>
           ))}
         </select>
-
-        {hasFilters && (
-          <button
-            onClick={clear}
-            className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-secondary hover:text-primary hover:bg-surface transition-colors"
-          >
-            Clear
-          </button>
-        )}
       </div>
 
-      {/* Muscle pills — fixed grid */}
-      <div className="space-y-2">
-        <div className="grid grid-cols-4 gap-1.5">
-          {visibleMuscles.map((m) => {
-            const active = muscles.includes(m);
-            return (
-              <button
-                key={m}
-                onClick={() => toggleMuscle(m)}
-                className={`rounded-lg py-1.5 text-xs font-medium transition-colors text-center truncate ${
-                  active
-                    ? "bg-accent text-white"
-                    : "bg-surface border border-border-subtle text-secondary hover:text-primary hover:border-border"
-                }`}
-              >
-                {m.charAt(0).toUpperCase() + m.slice(1)}
-              </button>
-            );
-          })}
-        </div>
+      {/* Muscle pills */}
+      <div className="flex flex-wrap gap-2 items-center">
+        {PINNED_MUSCLES.map((m) => {
+          const active = muscles.includes(m);
+          const label = MUSCLE_LABELS[m] ?? m.charAt(0).toUpperCase() + m.slice(1);
+          return (
+            <button
+              key={m}
+              onClick={() => toggleMuscle(m)}
+              className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
+                active
+                  ? "bg-accent text-white shadow-sm"
+                  : "bg-surface border border-border-subtle text-secondary hover:text-primary hover:border-border"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+
+        <AnimatePresence initial={false}>
+          {showAll &&
+            extraMuscles.map((m, i) => {
+              const active = muscles.includes(m);
+              const label = MUSCLE_LABELS[m] ?? m.charAt(0).toUpperCase() + m.slice(1);
+              return (
+                <motion.button
+                  key={m}
+                  onClick={() => toggleMuscle(m)}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.15, delay: i * 0.03 }}
+                  className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
+                    active
+                      ? "bg-accent text-white shadow-sm"
+                      : "bg-surface border border-border-subtle text-secondary hover:text-primary hover:border-border"
+                  }`}
+                >
+                  {label}
+                </motion.button>
+              );
+            })}
+        </AnimatePresence>
 
         <button
           onClick={() => setShowAll((v) => !v)}
-          className="text-xs text-muted hover:text-primary transition-colors"
+          className={`rounded-full px-4 py-1.5 text-xs font-medium border transition-all ${
+            hasActiveInExtra && !showAll
+              ? "border-accent text-accent hover:bg-accent/10"
+              : "border-border-subtle text-muted hover:text-primary hover:border-border"
+          }`}
         >
-          {showAll ? "Show less" : `+${hiddenCount} more`}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={showAll ? "less" : "more"}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="block"
+            >
+              {showAll ? "Show less" : `+${hiddenCount} more`}
+            </motion.span>
+          </AnimatePresence>
         </button>
       </div>
     </div>
