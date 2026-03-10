@@ -169,71 +169,77 @@ export function WorkoutDetailDrawer() {
 
           {/* ── Summary ── */}
           {drawerView === "summary" && activeSession && (
-            <motion.div key="summary" {...fadeSlide} className="space-y-8">
-              <div className="text-center space-y-3">
-                <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center mx-auto">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    className="text-white"
-                  >
+            <motion.div key="summary" {...fadeSlide} className="space-y-5">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-muted uppercase tracking-wider">
+                  {formatDateShort(activeSession.date)}
+                </p>
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-success">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M20 6 9 17l-5-5" />
                   </svg>
-                </div>
-                <p className="text-sm text-secondary">{formatDateShort(activeSession.date)}</p>
+                  Logged
+                </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-4 text-sm text-secondary">
                 {activeSession.duration_minutes && (
-                  <div className="col-span-2 rounded-xl bg-surface border border-border-subtle px-5 py-3 flex items-center justify-between">
-                    <span className="text-xs text-muted uppercase tracking-wider font-semibold">Duration</span>
-                    <span className="text-sm font-bold text-primary tabular-nums">{activeSession.duration_minutes} min</span>
-                  </div>
+                  <span className="tabular-nums">{activeSession.duration_minutes} min</span>
                 )}
-                <div className="rounded-xl bg-surface border border-border-subtle p-5 text-center">
-                  <p className="text-3xl font-bold text-primary tabular-nums">
-                    {activeSession.workout_exercises.length}
-                  </p>
-                  <p className="text-xs text-muted mt-1">
-                    {activeSession.workout_exercises.length === 1 ? "exercise" : "exercises"}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-surface border border-border-subtle p-5 text-center">
-                  <p className="text-3xl font-bold text-primary tabular-nums">{summaryTotalSets}</p>
-                  <p className="text-xs text-muted mt-1">{summaryTotalSets === 1 ? "set" : "sets"}</p>
-                </div>
+                <span className="tabular-nums">
+                  {activeSession.workout_exercises.length}{" "}
+                  {activeSession.workout_exercises.length === 1 ? "exercise" : "exercises"}
+                </span>
+                <span className="tabular-nums">
+                  {summaryTotalSets} {summaryTotalSets === 1 ? "set" : "sets"}
+                </span>
               </div>
+
+              {activeSession.notes && (
+                <p className="text-sm text-secondary italic border-l-2 border-accent/30 pl-3">
+                  {activeSession.notes}
+                </p>
+              )}
 
               {activeSession.workout_exercises.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-3">
                   {activeSession.workout_exercises.map((we) => (
-                    <div
-                      key={we.id}
-                      className="flex items-center justify-between px-4 py-3 rounded-lg bg-surface"
-                    >
-                      <p className="text-sm font-medium text-primary">{we.exercise.name}</p>
-                      <p className="text-xs text-muted tabular-nums">
-                        {we.sets.length} {we.sets.length === 1 ? "set" : "sets"}
-                      </p>
+                    <div key={we.id} className="rounded-xl bg-surface border border-border-subtle overflow-hidden">
+                      <div className="px-5 py-3.5 border-b border-border">
+                        <p className="font-semibold text-sm text-primary">{we.exercise.name}</p>
+                      </div>
+                      <div className="px-5 py-3.5">
+                        <div className="grid grid-cols-[40px_1fr_1fr] gap-4 mb-2 text-[11px] font-semibold text-muted uppercase tracking-wider">
+                          <span>Set</span>
+                          <span>Reps</span>
+                          <span>Weight</span>
+                        </div>
+                        {we.sets.map((s) => (
+                          <div
+                            key={s.id}
+                            className="grid grid-cols-[40px_1fr_1fr] gap-4 py-1.5 border-b border-border-subtle last:border-0"
+                          >
+                            <span className="text-sm font-medium text-muted tabular-nums">{s.set_number}</span>
+                            <span className="text-sm font-medium text-primary tabular-nums">{s.reps}</span>
+                            <span className="text-sm font-medium text-primary tabular-nums">{s.weight} lbs</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <button
                   onClick={closeDrawer}
-                  className="flex-1 bg-accent text-white text-sm font-semibold rounded-lg py-3 hover:bg-accent-hover transition-colors"
+                  className="bg-accent text-white text-sm font-semibold rounded-lg px-6 py-3 hover:bg-accent-hover transition-colors"
                 >
                   Done
                 </button>
                 <button
                   onClick={handleViewDetails}
-                  className="flex-1 text-sm font-medium text-primary border border-border rounded-lg py-3 hover:bg-surface transition-colors"
+                  className="text-sm font-medium text-secondary hover:text-primary transition-colors"
                 >
                   View details
                 </button>
