@@ -2,11 +2,25 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "./ThemeToggle";
+import type { User } from "@supabase/supabase-js";
 
 export function Navbar() {
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_, session) =>
+      setUser(session?.user ?? null),
+    );
+    return () => subscription.unsubscribe();
+  }, []);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -16,23 +30,25 @@ export function Navbar() {
   }
 
   return (
-    <nav className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-      <div className="mx-auto max-w-5xl px-4 h-14 flex items-center justify-between">
+    <nav className="border-b border-border bg-bg/80 backdrop-blur-md sticky top-0 z-30">
+      <div className="px-4 sm:px-8 h-16 flex items-center justify-between">
         <Link
-          href="/dashboard"
-          className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight"
+          href={user ? "/dashboard" : "/auth/signin"}
+          className="font-display text-xl text-primary tracking-tight"
         >
-          BodyLab
+          Recovr
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <ThemeToggle />
-          <button
-            onClick={handleSignOut}
-            className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            Sign out
-          </button>
+          {user && (
+            <button
+              onClick={handleSignOut}
+              className="text-sm font-medium text-muted hover:text-primary px-3 py-2 rounded-lg hover:bg-surface transition-colors"
+            >
+              Sign out
+            </button>
+          )}
         </div>
       </div>
     </nav>
