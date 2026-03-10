@@ -4,17 +4,16 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { data: claims, error } = await supabase.auth.getClaims();
+  if (error || !claims) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = claims.claims.sub as string;
 
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q") ?? "";
 
   const exercises = await prisma.exercise.findMany({
     where: {
-      OR: [{ user_id: null }, { user_id: user.id }],
+      OR: [{ user_id: null }, { user_id: userId }],
       ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
     },
     orderBy: [{ user_id: "asc" }, { name: "asc" }],
