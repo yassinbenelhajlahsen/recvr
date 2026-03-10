@@ -158,15 +158,15 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
   function addExercise(ex: Exercise) {
     if (exercises.some((e) => e.exercise_id === ex.id)) return;
     setExercises((prev) => [
-      ...prev,
       {
         id: uid(),
         exercise_id: ex.id,
         exercise_name: ex.name,
         muscle_groups: ex.muscle_groups,
-        order: prev.length,
+        order: 0,
         sets: [{ id: uid(), set_number: 1, reps: "", weight: "" }],
       },
+      ...prev,
     ]);
     setShowSearch(false);
     setSearchQuery("");
@@ -400,7 +400,7 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Search exercises…"
+                placeholder="Search by name or muscle…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 bg-transparent text-sm text-primary placeholder-muted focus:outline-none"
