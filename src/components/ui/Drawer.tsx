@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { createPortal } from "react-dom";
 import type { DrawerProps } from "@/types/ui";
 
@@ -11,9 +12,7 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
   /* eslint-disable react-hooks/set-state-in-effect -- portal mount/unmount + animation requires effect-driven setState */
   useEffect(() => {
     if (open) {
-      setMounted(true);
-      // Double rAF ensures the browser paints the initial (off-screen) state
-      // before we trigger the transition to the visible state.
+      flushSync(() => setMounted(true));
       let raf2: number;
       const raf = requestAnimationFrame(() => {
         raf2 = requestAnimationFrame(() => setVisible(true));
