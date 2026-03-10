@@ -1,6 +1,6 @@
 export default function DashboardLoading() {
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-8 py-10 flex flex-col xl:flex-row gap-8 items-start">
+    <div className="px-4 sm:px-8 py-10 flex flex-col xl:flex-row gap-8 items-start">
 
       {/* Left column */}
       <div className="flex-1 min-w-0 space-y-6">
@@ -24,7 +24,7 @@ export default function DashboardLoading() {
       </div>
 
       {/* Right column: recovery panel */}
-      <div className="w-full xl:w-72 shrink-0 xl:sticky xl:top-24">
+      <div className="w-full xl:w-96 shrink-0 xl:sticky xl:top-24">
         <div className="skeleton h-96 w-full rounded-xl" />
       </div>
 
