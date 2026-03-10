@@ -5,11 +5,11 @@ import { useRef, useState, useTransition } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const DATE_PRESETS = [
-  { label: "All time", value: "" },
-  { label: "Today", value: "today" },
-  { label: "This week", value: "week" },
-  { label: "This month", value: "month" },
-  { label: "Last 3 months", value: "3months" },
+  { label: "30 Days", value: "30d" },
+  { label: "90 Days", value: "90d" },
+  { label: "6 Months", value: "6m" },
+  { label: "1 Year", value: "1y" },
+  { label: "All Time", value: "" },
 ];
 
 const PINNED_MUSCLES = ["chest", "back", "glutes", "quadriceps"];
@@ -104,42 +104,41 @@ export function WorkoutsFilter() {
     <div
       className={`space-y-3 transition-opacity duration-300 ${isPending ? "opacity-50" : "opacity-100"}`}
     >
-      {/* Row: search + date preset */}
-      <div className="flex flex-col sm:flex-row gap-2">
+      {/* Search + date range pills on one row */}
+      <div className="flex flex-wrap items-center gap-2">
         <input
           type="text"
           placeholder="Search by exercise…"
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
-          className="flex-1 rounded-lg border border-border bg-elevated px-3.5 py-2.5 text-sm text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
+          className="flex-1 min-w-40 rounded-lg border border-border bg-elevated px-3.5 py-2.5 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
         />
 
-        <div className="relative">
-          <select
-            value={datePreset}
-            onChange={(e) => handleDateChange(e.target.value)}
-            className="w-full appearance-none rounded-lg border border-border bg-elevated pl-3.5 pr-9 py-2.5 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors cursor-pointer"
-          >
-            {DATE_PRESETS.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-          <svg
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </div>
-      </div>
+        {DATE_PRESETS.map((preset) => {
+          const active = datePreset === preset.value;
+          return (
+            <button
+              key={preset.value || "all"}
+              onClick={() => handleDateChange(preset.value)}
+              className={`relative rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
+                active
+                  ? "text-white shadow-sm"
+                  : "bg-surface border border-border-subtle text-secondary hover:text-primary hover:border-border"
+              }`}
+            >
+              {active && (
+                <motion.span
+                  layoutId="dashboardDatePill"
+                  className="absolute inset-0 rounded-full bg-accent"
+                  style={{ zIndex: -1 }}
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+                />
+              )}
+              <span className="relative z-10">{preset.label}</span>
+            </button>
+          );
+        })}
+      </div>{/* end search + date row */}
 
       {/* Muscle pills */}
       <div className="flex flex-wrap gap-2 items-center">

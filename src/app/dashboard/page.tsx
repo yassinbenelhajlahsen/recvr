@@ -19,11 +19,11 @@ function resolveDatePreset(preset: string | undefined): { from?: Date; to?: Date
   const now = new Date();
   const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const endOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59));
-  if (preset === "today") return { from: startOfToday, to: endOfToday };
   const daysAgo = (n: number) => new Date(startOfToday.getTime() - n * 86400000);
-  if (preset === "week") return { from: daysAgo(6), to: endOfToday };
-  if (preset === "month") return { from: daysAgo(29), to: endOfToday };
-  if (preset === "3months") return { from: daysAgo(89), to: endOfToday };
+  if (preset === "30d") return { from: daysAgo(29), to: endOfToday };
+  if (preset === "90d") return { from: daysAgo(89), to: endOfToday };
+  if (preset === "6m") return { from: daysAgo(181), to: endOfToday };
+  if (preset === "1y") return { from: daysAgo(364), to: endOfToday };
   return {};
 }
 
