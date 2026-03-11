@@ -52,6 +52,7 @@ export type WorkoutFormProps = {
   workoutId?: string;
   initialData?: WorkoutFormInitialData;
   onSave?: (data: WorkoutSaveData) => void;
+  onDraftSave?: () => void;
   onCancel?: () => void;
   compact?: boolean;
 };
@@ -64,6 +65,7 @@ export type WorkoutPreview = {
   notes: string | null;
   exerciseNames: string[];
   totalSets: number;
+  isDraft?: boolean;
 };
 
 export type SessionSummaryData = {
@@ -96,6 +98,7 @@ export type WorkoutDetail = {
   duration_minutes: number | null;
   body_weight?: number | null;
   notes: string | null;
+  is_draft?: boolean;
   workout_exercises: WorkoutExerciseData[];
 };
 
@@ -107,6 +110,7 @@ export type Workout = {
   notes: string | null;
   exerciseNames: string[];
   totalSets: number;
+  isDraft?: boolean;
 };
 
 export type DashboardClientProps = {
@@ -114,4 +118,5 @@ export type DashboardClientProps = {
   workouts: Workout[];
   hasFilters: boolean;
   recovery: MuscleRecovery[];
+  openDraftId?: string;
 };
