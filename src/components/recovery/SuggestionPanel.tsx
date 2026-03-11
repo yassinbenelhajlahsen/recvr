@@ -56,6 +56,12 @@ export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
   const { saveDraft, saving, saveError } = useSaveDraft();
   const openDrawer = useWorkoutStore((s) => s.openDrawer);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const isDev = process.env.NODE_ENV === "development";
+
+  async function handleDevReset() {
+    await fetch("/api/suggest/cooldown", { method: "DELETE" });
+    dismiss();
+  }
 
   function togglePreset(option: string) {
     setSelected((prev) => {
@@ -188,6 +194,15 @@ export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
                     <span className="text-s text-muted/70 tabular-nums">
                       New in {cooldownLabel}
                     </span>
+                  )}
+                  {isDev && cooldownLabel && (
+                    <button
+                      onClick={handleDevReset}
+                      className="text-xs text-danger/60 hover:text-danger transition-colors tabular-nums"
+                      title="DEV: clear suggestion cache"
+                    >
+                      [reset]
+                    </button>
                   )}
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getSuggestionCooldown, getCachedSuggestion, getSuggestionDraftId } from "@/lib/cache";
+import { getSuggestionCooldown, getCachedSuggestion, getSuggestionDraftId, invalidateSuggestionDraftId } from "@/lib/cache";
+import { redis } from "@/lib/redis";
 
 export async function GET() {
   const supabase = await createClient();
@@ -22,4 +23,23 @@ export async function GET() {
     ...(suggestion ? { suggestion } : {}),
     ...(draftId ? { draftId } : {}),
   });
+}
+
+/** Dev-only: clear suggestion + draft cache so a new one can be generated immediately. */
+export async function DELETE() {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not available" }, { status: 403 });
+  }
+  const supabase = await createClient();
+  const { data: claims, error } = await supabase.auth.getClaims();
+  if (error || !claims) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = claims.claims.sub as string;
+
+  if (redis) {
+    await Promise.all([
+      redis.del(`suggestion:${userId}`),
+      invalidateSuggestionDraftId(userId),
+    ]);
+  }
+  return NextResponse.json({ ok: true });
 }
