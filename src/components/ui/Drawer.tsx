@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { DrawerProps } from "@/types/ui";
 
-export function Drawer({ open, onClose, title, children }: DrawerProps) {
+export function Drawer({ open, onClose, title, size = "default", children }: DrawerProps) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
 
@@ -52,7 +52,7 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
       }}
     >
       <div
-        className={`relative flex flex-col w-full max-w-md h-full bg-elevated shadow-2xl transition-transform ${
+        className={`relative flex flex-col w-full ${size === "lg" ? "max-w-xl" : "max-w-md"} h-full bg-elevated shadow-2xl transition-transform ${
           visible
             ? "duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] translate-x-0"
             : "duration-250 ease-[cubic-bezier(0.4,0,1,1)] translate-x-full"
