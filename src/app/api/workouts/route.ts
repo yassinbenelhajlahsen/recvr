@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
-  const { date, notes, duration_minutes, body_weight, exercises } = body;
+  const { date, notes, duration_minutes, body_weight, exercises, is_draft } = body;
   if (!Array.isArray(exercises)) {
     return NextResponse.json({ error: "exercises must be an array" }, { status: 400 });
   }
@@ -80,6 +80,8 @@ export async function POST(request: Request) {
       notes: notes || null,
       duration_minutes: duration_minutes ? parseInt(String(duration_minutes)) : null,
       body_weight: typeof body_weight === "number" && body_weight > 0 ? body_weight : null,
+      is_draft: is_draft === true,
+      source: "manual",
       workout_exercises: {
         create: exercises.map((ex: { exercise_id: string; order?: number; sets: { set_number: number; reps: string; weight: string }[] }, i: number) => ({
           exercise_id: ex.exercise_id,
@@ -97,8 +99,8 @@ export async function POST(request: Request) {
     select: { id: true },
   });
 
-  // Smart sync: update User.weight_lbs only if this is the latest workout with body_weight
-  if (typeof body_weight === "number" && body_weight > 0) {
+  // Smart sync: update User.weight_lbs only if this is the latest workout with body_weight (skip for drafts)
+  if (is_draft !== true && typeof body_weight === "number" && body_weight > 0) {
     const latest = await prisma.workout.findFirst({
       where: { user_id: user.id, body_weight: { not: null } },
       orderBy: { date: "desc" },

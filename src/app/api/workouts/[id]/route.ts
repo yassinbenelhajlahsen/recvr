@@ -109,6 +109,30 @@ export async function PUT(
   return NextResponse.json(workout);
 }
 
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const [{ data: { user } }, existing] = await Promise.all([
+    supabase.auth.getUser(),
+    prisma.workout.findUnique({ where: { id } }),
+  ]);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!existing || existing.user_id !== user.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body.is_draft !== "boolean") {
+    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  }
+
+  await prisma.workout.update({ where: { id }, data: { is_draft: body.is_draft } });
+  return NextResponse.json({ ok: true });
+}
+
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
