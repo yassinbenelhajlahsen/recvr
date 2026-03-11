@@ -20,6 +20,10 @@ export function formatDateShort(dateStr: string) {
   }).format(new Date(dateStr));
 }
 
+export function toLocalISODate(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export const fadeSlide = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },

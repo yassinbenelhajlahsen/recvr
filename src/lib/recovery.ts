@@ -47,6 +47,7 @@ export async function calculateRecovery(userId: string): Promise<MuscleRecovery[
     where: {
       user_id: userId,
       date: { gte: windowStart },
+      is_draft: false,
     },
     select: {
       id: true,
