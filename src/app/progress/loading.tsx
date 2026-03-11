@@ -1,6 +1,6 @@
 export default function ProgressLoading() {
   return (
-    <div className="px-4 sm:px-6 py-12">
+    <div className="px-4 sm:px-6 py-10">
 
       {/* Page header */}
       <div className="mb-8 space-y-3">
@@ -10,26 +10,23 @@ export default function ProgressLoading() {
 
       <div className="space-y-5">
 
-        {/* Exercise search */}
-        <div className="skeleton h-[42px] w-full rounded-lg" />
-
-        {/* Date range pills */}
-        <div className="flex gap-2">
+        {/* Date range pills — 5 flex-1 */}
+        <div className="flex items-center gap-2">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="skeleton h-8 w-20 rounded-full" />
+            <div key={i} className="skeleton flex-1 h-10 rounded-full" />
           ))}
         </div>
 
-        {/* Stats — stacked */}
-        <div className="flex flex-col gap-3">
-          <div className="skeleton h-24 rounded-xl" />
-          <div className="skeleton h-24 rounded-xl" />
-        </div>
-
-        {/* Charts — side by side */}
+        {/* Charts grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="skeleton h-72 w-full rounded-xl" />
-          <div className="skeleton h-72 w-full rounded-xl" />
+          {/* Left: exercise selector + 1RM chart */}
+          <div className="space-y-3">
+            <div className="skeleton h-10 w-full rounded-lg" />
+            <div className="skeleton h-72 w-full rounded-xl" />
+          </div>
+
+          {/* Right: body weight chart — same height as left (h-10 + gap 12px + h-72 = 340px) */}
+          <div className="skeleton h-[340px] w-full rounded-xl" />
         </div>
 
       </div>
