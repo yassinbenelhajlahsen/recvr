@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { calculateRecovery } from "@/lib/recovery";
+import { getRecovery } from "@/lib/recovery";
 import { prisma } from "@/lib/prisma";
 import { openai } from "@/lib/openai";
+import { getCachedSuggestion, setCachedSuggestion, getSuggestionCooldown, getSuggestionDraftId } from "@/lib/cache";
 import type { WorkoutSuggestion } from "@/types/suggestion";
 
 const SYSTEM_PROMPT = `You are a certified personal trainer AI. Given a user's muscle recovery status and fitness goals, design their next workout session as a coherent, structured split.
@@ -68,12 +69,22 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Return cached suggestion if within 1-hour cooldown
+  const cached = await getCachedSuggestion(user.id);
+  if (cached) {
+    const [cooldown, draftId] = await Promise.all([
+      getSuggestionCooldown(user.id),
+      getSuggestionDraftId(user.id),
+    ]);
+    return NextResponse.json({ ...cached, _cooldown: cooldown, _cached: true, ...(draftId ? { _draftId: draftId } : {}) });
+  }
+
   const [userProfile, recovery] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
       select: { fitness_goals: true, weight_lbs: true },
     }),
-    calculateRecovery(user.id),
+    getRecovery(user.id),
   ]);
 
   const recovered = recovery.filter((m) => m.status === "recovered");
@@ -135,5 +146,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid response format from AI" }, { status: 500 });
   }
 
-  return NextResponse.json(suggestion);
+  await setCachedSuggestion(user.id, suggestion);
+  return NextResponse.json({ ...suggestion, _cooldown: 3600 });
 }

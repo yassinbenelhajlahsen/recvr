@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { invalidateExercises, setSuggestionDraftId } from "@/lib/cache";
 import type { WorkoutSuggestion, SuggestedExercise } from "@/types/suggestion";
 
 export async function POST(request: Request) {
@@ -27,8 +28,11 @@ export async function POST(request: Request) {
   // Resolve each suggested exercise to a DB exercise ID sequentially to avoid
   // duplicate custom exercise creation if the AI repeats an unknown exercise name.
   const resolvedIds: string[] = [];
+  let createdCustomExercise = false;
   for (const ex of suggestion.exercises as SuggestedExercise[]) {
-    resolvedIds.push(await resolveExercise(ex, allExercises, user.id));
+    const { id, created } = await resolveExercise(ex, allExercises, user.id);
+    resolvedIds.push(id);
+    if (created) createdCustomExercise = true;
   }
 
   const now = new Date();
@@ -67,6 +71,13 @@ export async function POST(request: Request) {
     select: { id: true },
   });
 
+  if (createdCustomExercise) {
+    await invalidateExercises(user.id);
+  }
+
+  // Track that a draft was created from the current suggestion (for UI dedup)
+  void setSuggestionDraftId(user.id, workout.id);
+
   return NextResponse.json({ id: workout.id }, { status: 201 });
 }
 
@@ -74,12 +85,12 @@ async function resolveExercise(
   ex: SuggestedExercise,
   allExercises: { id: string; name: string; muscle_groups: string[] }[],
   userId: string,
-): Promise<string> {
+): Promise<{ id: string; created: boolean }> {
   const suggestedLower = ex.name.toLowerCase();
 
   // Exact match
   const exact = allExercises.find((e) => e.name.toLowerCase() === suggestedLower);
-  if (exact) return exact.id;
+  if (exact) return { id: exact.id, created: false };
 
   // Substring match (either direction)
   const fuzzy = allExercises.find(
@@ -87,7 +98,7 @@ async function resolveExercise(
       e.name.toLowerCase().includes(suggestedLower) ||
       suggestedLower.includes(e.name.toLowerCase()),
   );
-  if (fuzzy) return fuzzy.id;
+  if (fuzzy) return { id: fuzzy.id, created: false };
 
   // Create a custom exercise for this user
   const created = await prisma.exercise.create({
@@ -98,5 +109,5 @@ async function resolveExercise(
     },
     select: { id: true },
   });
-  return created.id;
+  return { id: created.id, created: true };
 }

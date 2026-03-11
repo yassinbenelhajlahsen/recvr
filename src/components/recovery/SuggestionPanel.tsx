@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { SparklesIcon, AsteriskIcon } from "@/components/ui/icons";
 import { useSuggestion } from "./hooks/useSuggestion";
 import { useSaveDraft } from "./hooks/useSaveDraft";
+import { useWorkoutStore } from "@/store/workoutStore";
 import type { SuggestedExercise } from "@/types/suggestion";
 import type { MuscleRecovery, RecoveryStatus } from "@/types/recovery";
 
@@ -52,9 +52,9 @@ const PRESET_GROUPS = [
 ];
 
 export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
-  const { suggestion, isLoading, error, generate, dismiss } = useSuggestion();
+  const { suggestion, isLoading, error, generate, dismiss, cooldownLabel, draftId, setDraftId, isInitializing } = useSuggestion();
   const { saveDraft, saving, saveError } = useSaveDraft();
-  const router = useRouter();
+  const openDrawer = useWorkoutStore((s) => s.openDrawer);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   function togglePreset(option: string) {
@@ -75,8 +75,21 @@ export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
     if (!suggestion) return;
     const id = await saveDraft(suggestion);
     if (id) {
-      router.push(`/?draft=${id}`);
+      setDraftId(id);
+      onDismiss?.();
+      openDrawer(id);
     }
+  }
+
+  async function handleGoToWorkout() {
+    if (!draftId) return;
+    const res = await fetch(`/api/workouts/${draftId}`);
+    if (res.status === 404) {
+      setDraftId(null);
+      return;
+    }
+    onDismiss?.();
+    openDrawer(draftId);
   }
 
   // Sorted: recovered first, then partial, then fatigued
@@ -91,7 +104,16 @@ export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
   return (
     <div className="flex-1 flex flex-col h-full">
       <AnimatePresence mode="wait" initial={false}>
-        {isLoading ? (
+        {isInitializing ? (
+          <motion.div
+            key="init"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.1 }}
+            className="flex-1"
+          />
+        ) : isLoading ? (
           <motion.div
             key="loading"
             initial={{ opacity: 0 }}
@@ -158,9 +180,16 @@ export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
                 <h2 className="font-display text-2xl text-primary italic leading-tight">
                   {suggestion.title}
                 </h2>
-                <span className="shrink-0 text-xs bg-surface border border-border-subtle text-muted px-2.5 py-1 rounded-full mt-1 tabular-nums">
-                  ~{suggestion.estimatedMinutes}m
-                </span>
+                <div className="flex flex-col items-end gap-1.5 shrink-0 mt-1">
+                  <span className="text-xs bg-surface border border-border-subtle text-muted px-2.5 py-1 rounded-full tabular-nums">
+                    ~{suggestion.estimatedMinutes}m
+                  </span>
+                  {cooldownLabel && (
+                    <span className="text-s text-muted/70 tabular-nums">
+                      New in {cooldownLabel}
+                    </span>
+                  )}
+                </div>
               </div>
               <p className="text-sm text-secondary leading-relaxed">
                 {suggestion.rationale}
@@ -193,13 +222,22 @@ export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
                 >
                   Dismiss
                 </button>
-                <button
-                  onClick={handleSaveAsDraft}
-                  disabled={saving}
-                  className="flex-1 text-md font-medium text-accent py-4 hover:bg-surface transition-colors disabled:opacity-50"
-                >
-                  {saving ? "Saving..." : "Save as Draft"}
-                </button>
+                {draftId ? (
+                  <button
+                    onClick={handleGoToWorkout}
+                    className="flex-1 text-md font-medium text-accent py-4 hover:bg-surface transition-colors"
+                  >
+                    Go to workout →
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSaveAsDraft}
+                    disabled={saving}
+                    className="flex-1 text-md font-medium text-accent py-4 hover:bg-surface transition-colors disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Save as Draft"}
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>
