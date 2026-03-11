@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { normalizeGender } from "@/lib/utils";
 
 export async function GET() {
   const supabase = await createClient();
@@ -15,6 +16,7 @@ export async function GET() {
       height_inches: true,
       weight_lbs: true,
       fitness_goals: true,
+      gender: true,
       onboarding_completed: true,
     },
   });
@@ -57,6 +59,9 @@ export async function PUT(request: Request) {
       data.fitness_goals = [];
     }
   }
+  if ("gender" in body) {
+    data.gender = normalizeGender(body.gender);
+  }
   if ("onboarding_completed" in body) {
     data.onboarding_completed = body.onboarding_completed === true;
   }
@@ -69,6 +74,7 @@ export async function PUT(request: Request) {
       height_inches: true,
       weight_lbs: true,
       fitness_goals: true,
+      gender: true,
       onboarding_completed: true,
     },
   });

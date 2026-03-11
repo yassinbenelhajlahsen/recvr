@@ -10,6 +10,7 @@ interface NavbarProfile {
   height_inches?: number | null;
   weight_lbs?: number | null;
   fitness_goals?: string[];
+  gender?: "male" | "female" | null;
 }
 
 interface UseNavbarReturn {

@@ -76,8 +76,8 @@ export function WorkoutForm({ workoutId, initialData, onSave, onDraftSave, onCan
   }
 
   const actionButtons = (
-    <div className="space-y-2">
-      <div className="flex items-center gap-4 overflow-hidden h-11">
+    <div className="sticky bottom-0 -mx-5 px-5 pt-4 pb-5 bg-elevated border-t border-border">
+      <div className="flex items-center justify-center gap-4 overflow-hidden h-11">
         <AnimatePresence initial={false}>
           {(isEdit || isFormComplete) && (
             <motion.div
@@ -125,14 +125,12 @@ export function WorkoutForm({ workoutId, initialData, onSave, onDraftSave, onCan
           </Link>
         )}
       </div>
-      {error && <p className="text-sm text-danger font-medium">{error}</p>}
+      {error && <p className="text-sm text-danger font-medium text-center mt-1">{error}</p>}
     </div>
   );
 
   return (
     <div className={compact ? "space-y-5" : "space-y-8"}>
-      {isEdit && actionButtons}
-
       {/* Details */}
       <div className={compact ? "space-y-4" : "rounded-xl bg-surface border border-border-subtle p-6 space-y-5"}>
         <p className="text-xs font-semibold text-muted uppercase tracking-wider">Details</p>
@@ -149,7 +147,7 @@ export function WorkoutForm({ workoutId, initialData, onSave, onDraftSave, onCan
           </div>
           <div className="space-y-1.5 w-20">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted">
-              Min
+              MinS
             </label>
             <input
               type="number"
@@ -162,7 +160,7 @@ export function WorkoutForm({ workoutId, initialData, onSave, onDraftSave, onCan
           </div>
           <div className="space-y-1.5 w-20">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted">
-              Lbs
+              WEIGHT
             </label>
             <input
               type="number"
@@ -264,7 +262,7 @@ export function WorkoutForm({ workoutId, initialData, onSave, onDraftSave, onCan
         )}
       </div>
 
-      {!isEdit && actionButtons}
+      {actionButtons}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { DashboardClient } from "@/components/DashboardClient";
 import { getRecovery } from "@/lib/recovery";
+import { normalizeGender } from "@/lib/utils";
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
@@ -45,7 +46,10 @@ export default async function DashboardPage({
   const { from, to } = resolveDatePreset(datePreset);
 
   const [dbUser, workouts, recovery] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId } }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, gender: true, onboarding_completed: true },
+    }),
     prisma.workout.findMany({
       where: {
         user_id: userId,
@@ -116,6 +120,8 @@ export default async function DashboardPage({
 
   const hasFilters = !!(search || datePreset || muscles.length);
 
+  const gender = normalizeGender(dbUser?.gender);
+
   return (
     <DashboardClient
       displayName={displayName}
@@ -123,6 +129,7 @@ export default async function DashboardPage({
       hasFilters={hasFilters}
       recovery={recovery}
       openDraftId={draft}
+      gender={gender}
     />
   );
 }

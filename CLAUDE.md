@@ -83,7 +83,7 @@ npx prisma studio        # Open Prisma Studio (DB GUI)
 ## Routing
 
 - `/` — home: workout list + recovery panel + drawer (create/view/edit/summary)
-- `/onboarding` — locked 3-step flow (name → metrics → goal). Server-side gate.
+- `/onboarding` — locked 4-step flow (name → gender → metrics → goal). Server-side gate.
 - `/recovery` — SVG body maps + tap-to-inspect muscle detail
 - `/progress` — 1RM charts + body weight chart, side-by-side. Full-width layout.
 
@@ -122,7 +122,7 @@ src/
 
 - Computed on-the-fly from last 96h workouts — no DB tables. See `src/lib/recovery.ts`.
 - Status thresholds: `recovered` ≥ 0.85, `partial` ≥ 0.45, `fatigued` < 0.45
-- SVG body maps via `@mjcdev/react-body-highlighter`, HSL interpolation in `recoveryColors.ts`
+- SVG body maps via `@mjcdev/react-body-highlighter`, HSL interpolation in `recoveryColors.ts`; `gender` prop (`"male"` | `"female"`, defaults to `"male"` for `null`) flows from DB through page → RecoveryView/RecoveryPanel → BodyMapFront/BodyMapBack. Library only supports male/female — no neutral option.
 - `RecoveryPanel` (dashboard) is view-only. Full interaction on `/recovery`.
 
 ### Body Weight Tracking
@@ -133,8 +133,9 @@ src/
 
 ### Onboarding
 
-- Locked 3-step flow, server-side gate on dashboard + OAuth callback
-- User fields: `height_inches`, `weight_lbs`, `fitness_goals` (String[]), `onboarding_completed`
+- Locked 4-step flow, server-side gate on dashboard + OAuth callback
+- Steps: Name (0) → Gender (1) → Body Metrics (2) → Goals (3). All fields optional.
+- User fields: `height_inches`, `weight_lbs`, `fitness_goals` (String[]), `gender` (String? — `"male"` | `"female"` | `null`), `onboarding_completed`
 - Goals: up to 3 presets OR 1 custom (mutually exclusive)
 
 ### AI Suggestions (`/recovery` page)
@@ -142,6 +143,7 @@ src/
 - `SuggestionTrigger` (server-rendered, receives recovery data) opens a `size="lg"` Drawer
 - `SuggestionPanel` + `useSuggestion` hook handle idle/loading/streaming/result states; hook uses AbortController to cancel in-flight requests on dismiss
 - API route `POST /api/suggest` calls OpenAI via singleton `src/lib/openai.ts`; do NOT trust client-supplied recovery data — always recompute server-side
+- **Gender prompt bias**: `gender="male"` → upper-body/strength hint; `gender="female"` → lower-body/glute hypertrophy hint; `null` → no gender line added (neutral). Recovery status always takes priority over gender hints.
 - **Streaming**: `POST /api/suggest` uses `stream: true` and returns `text/x-ndjson`. Each line is a `SuggestionStreamEvent` (defined in `src/types/suggestion.ts`): `meta | title | rationale | estimatedMinutes | exercise | done | error`. Cache hits still return instant `application/json` (no streaming).
 - `useSuggestion` reads the NDJSON stream line-by-line via `ReadableStream`, building a `PartialSuggestion` and calling `setState` on each event. Detects response type via `Content-Type` header to handle both paths.
 - `isStreaming` flag (`state.isLoading && state.suggestion !== null`) drives progressive UI: skeleton cards fill to 4 while exercises arrive, footer hidden until stream completes, scalar fields (title/rationale/minutes) animate in individually.

@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getRecovery } from "@/lib/recovery";
+import { prisma } from "@/lib/prisma";
+import { normalizeGender } from "@/lib/utils";
 import { RecoveryView } from "@/components/recovery/RecoveryView";
 import { SuggestionTrigger } from "@/components/recovery/SuggestionTrigger";
 
@@ -11,7 +13,12 @@ export default async function RecoveryPage() {
   if (error || !claims) redirect("/auth/signin");
 
   const userId = claims.claims.sub as string;
-  const recovery = await getRecovery(userId);
+  const [recovery, dbUser] = await Promise.all([
+    getRecovery(userId),
+    prisma.user.findUnique({ where: { id: userId }, select: { gender: true } }),
+  ]);
+
+  const gender = normalizeGender(dbUser?.gender);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
@@ -26,7 +33,7 @@ export default async function RecoveryPage() {
         </div>
         <SuggestionTrigger recovery={recovery} />
       </div>
-      <RecoveryView recovery={recovery} />
+      <RecoveryView recovery={recovery} gender={gender} />
     </div>
   );
 }

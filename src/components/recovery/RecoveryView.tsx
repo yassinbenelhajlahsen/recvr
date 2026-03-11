@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import type { MuscleRecovery } from "@/types/recovery";
+import type { Gender } from "@/types/user";
 import { BodyMapFront } from "./BodyMapFront";
 import { BodyMapBack } from "./BodyMapBack";
 import { MuscleDetailPanel } from "./MuscleDetailPanel";
@@ -10,9 +11,10 @@ import { WorkoutDetailDrawer } from "@/components/workout/WorkoutDetailDrawer";
 
 type Props = {
   recovery: MuscleRecovery[];
+  gender?: Gender;
 };
 
-export function RecoveryView({ recovery }: Props) {
+export function RecoveryView({ recovery, gender }: Props) {
   const { selectedMuscle, selectedData, muscleMap, handleSelect, fatigued, partial, recovered } =
     useRecoverySelection(recovery);
 
@@ -35,6 +37,7 @@ export function RecoveryView({ recovery }: Props) {
               <BodyMapFront
                 muscles={muscleMap}
                 onSelectMuscle={handleSelect}
+                gender={gender}
               />
             </div>
           </div>
@@ -44,6 +47,7 @@ export function RecoveryView({ recovery }: Props) {
               <BodyMapBack
                 muscles={muscleMap}
                 onSelectMuscle={handleSelect}
+                gender={gender}
               />
             </div>
           </div>

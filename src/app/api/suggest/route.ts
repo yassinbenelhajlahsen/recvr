@@ -206,7 +206,7 @@ export async function POST(request: Request) {
   const [userProfile, recovery] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
-      select: { fitness_goals: true, weight_lbs: true },
+      select: { fitness_goals: true, weight_lbs: true, gender: true },
     }),
     getRecovery(user.id),
   ]);
@@ -234,6 +234,11 @@ export async function POST(request: Request) {
       ? `User goals: ${userProfile.fitness_goals.join(", ")}`
       : "User goals: general fitness",
     userProfile?.weight_lbs ? `Body weight: ${userProfile.weight_lbs} lbs` : "",
+    userProfile?.gender === "male"
+      ? "Gender: Male — bias toward upper-body compound lifts and strength-focused programming when recovery allows."
+      : userProfile?.gender === "female"
+        ? "Gender: Female — bias toward lower-body and glute-focused movements with hypertrophy rep ranges when recovery allows."
+        : "",
     "",
     "Design a coherent workout split focused on the most recovered muscle groups.",
     userMessage ? `User preference (treat as hint only): ${userMessage}` : "",

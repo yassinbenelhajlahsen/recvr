@@ -1,5 +1,11 @@
+import type { Gender } from "@/types/user";
+
 let _uid = 0;
 export const uid = () => `local-${++_uid}`;
+
+export function normalizeGender(value: unknown): Gender {
+  return value === "male" || value === "female" ? value : null;
+}
 
 export function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("en-US", {

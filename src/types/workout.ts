@@ -1,4 +1,5 @@
 import type { MuscleRecovery } from "@/types/recovery";
+import type { Gender } from "@/types/user";
 
 export type SetEntry = { id: string; set_number: number; reps: string; weight: string };
 
@@ -119,4 +120,5 @@ export type DashboardClientProps = {
   hasFilters: boolean;
   recovery: MuscleRecovery[];
   openDraftId?: string;
+  gender?: Gender;
 };

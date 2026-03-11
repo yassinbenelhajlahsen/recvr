@@ -8,7 +8,7 @@ import { WorkoutsFilter } from "@/components/workout/WorkoutsFilter";
 import { RecoveryPanel } from "@/components/recovery/RecoveryPanel";
 import type { DashboardClientProps as Props } from "@/types/workout";
 
-export function DashboardClient({ displayName, workouts, hasFilters, recovery, openDraftId }: Props) {
+export function DashboardClient({ displayName, workouts, hasFilters, recovery, openDraftId, gender }: Props) {
   const openDrawer = useWorkoutStore((s) => s.openDrawer);
   const router = useRouter();
 
@@ -133,7 +133,7 @@ export function DashboardClient({ displayName, workouts, hasFilters, recovery, o
 
           {/* ─── Right column: recovery ─── */}
           <div className="w-full xl:w-96 shrink-0 xl:sticky xl:top-24">
-            <RecoveryPanel recovery={recovery} />
+            <RecoveryPanel recovery={recovery} gender={gender} />
           </div>
 
       </div>

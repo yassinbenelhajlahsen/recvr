@@ -120,6 +120,7 @@ export function Navbar() {
                 height_inches: profile?.height_inches ?? null,
                 weight_lbs: profile?.weight_lbs ?? null,
                 fitness_goals: profile?.fitness_goals ?? [],
+                gender: profile?.gender ?? null,
                 providers: user.app_metadata?.providers ?? [],
               }}
             />

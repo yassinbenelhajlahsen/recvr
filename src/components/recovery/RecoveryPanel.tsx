@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import type { MuscleRecovery } from "@/types/recovery";
+import type { Gender } from "@/types/user";
 import { BodyMapFront } from "./BodyMapFront";
 import { BodyMapBack } from "./BodyMapBack";
 import { useRecoverySelection } from "./hooks/useRecoverySelection";
 
 type Props = {
   recovery: MuscleRecovery[];
+  gender?: Gender;
 };
 
-export function RecoveryPanel({ recovery }: Props) {
+export function RecoveryPanel({ recovery, gender }: Props) {
   const { muscleMap, fatigued, partial, recovered } = useRecoverySelection(recovery);
 
   return (
@@ -35,12 +37,12 @@ export function RecoveryPanel({ recovery }: Props) {
           <div className="flex">
             <div className="flex-1 min-w-0 px-2 pt-3 pb-1">
               <p className="text-xs text-muted text-center mb-1 uppercase tracking-widest">Front</p>
-              <BodyMapFront muscles={muscleMap} />
+              <BodyMapFront muscles={muscleMap} gender={gender} />
             </div>
             <div className="w-px bg-border-subtle self-stretch" />
             <div className="flex-1 min-w-0 px-2 pt-3 pb-1">
               <p className="text-xs text-muted text-center mb-1 uppercase tracking-widest">Back</p>
-              <BodyMapBack muscles={muscleMap} />
+              <BodyMapBack muscles={muscleMap} gender={gender} />
             </div>
           </div>
 

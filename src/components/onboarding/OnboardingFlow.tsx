@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FloatingInput } from "@/components/ui/FloatingInput";
 import { GoalSelector } from "@/components/ui/GoalSelector";
+import { GenderSelector } from "@/components/ui/GenderSelector";
 import { MetricsInputs } from "./MetricsInputs";
 import { useAppStore } from "@/store/appStore";
 import { createClient } from "@/lib/supabase/client";
-import type { UnitSystem } from "@/types/user";
+import type { UnitSystem, Gender } from "@/types/user";
 import { resolveHeightToInches, resolveWeightToLbs } from "@/lib/units";
 
 const slideVariants = {
@@ -45,6 +46,7 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
   }, [setOnboarding]);
 
   const [name, setName] = useState(initialName);
+  const [gender, setGender] = useState<Gender>(null);
   const [unitSystem, setUnitSystem] = useState<UnitSystem>("imperial");
   const [height, setHeight] = useState("'");
   const [weight, setWeight] = useState("");
@@ -82,6 +84,7 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
           height_inches: resolveHeightToInches(height, unitSystem),
           weight_lbs: resolveWeightToLbs(weight, unitSystem),
           fitness_goals: fitnessGoals,
+          gender,
           onboarding_completed: true,
         }),
       }),
@@ -94,7 +97,7 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
   return (
     <div className="min-h-[calc(100dvh-65px)] flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-[420px]">
-        <StepDots current={step} total={3} />
+        <StepDots current={step} total={4} />
 
         <AnimatePresence mode="wait" custom={direction}>
           {step === 0 && (
@@ -152,10 +155,50 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
             >
               <div className="text-center space-y-1 mb-8">
                 <h1 className="font-display text-4xl italic text-primary">
+                  About you
+                </h1>
+                <p className="text-sm text-muted">
+                  Personalizes your recovery view and workout suggestions
+                </p>
+                <p className="text-xs text-muted opacity-70">
+                  All fields are optional — you can skip or change them any time
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <GenderSelector gender={gender} onChange={setGender} buttonPadding="py-5" />
+
+                <motion.button
+                  type="button"
+                  onClick={next}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full rounded-xl bg-accent hover:bg-accent-hover text-white text-[15px] font-semibold py-[13px] transition-colors duration-150"
+                >
+                  {gender ? "Continue" : "Skip"}
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 2 && (
+            <motion.div
+              key="step-2"
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="text-center space-y-1 mb-8">
+                <h1 className="font-display text-4xl italic text-primary">
                   Body metrics
                 </h1>
                 <p className="text-sm text-muted">
                   Helps personalize your experience
+                </p>
+                <p className="text-xs text-muted opacity-70">
+                  All fields are optional — you can skip or change them any time
                 </p>
               </div>
 
@@ -182,9 +225,9 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
             </motion.div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <motion.div
-              key="step-2"
+              key="step-3"
               custom={direction}
               variants={slideVariants}
               initial="enter"
@@ -199,9 +242,7 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
                 <p className="text-sm text-muted">
                   Recovery tracking will adapt to your focus
                 </p>
-                <p className="text-xs text-muted">
-                  Select up to 3
-                </p>
+                <p className="text-xs text-muted">Select up to 3</p>
               </div>
 
               <div className="space-y-4">

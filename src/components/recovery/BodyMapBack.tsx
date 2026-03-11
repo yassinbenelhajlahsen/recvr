@@ -5,6 +5,7 @@ import { buildBodyMapCss } from "./recoveryColors";
 import { useEffect } from "react";
 import { useClientStore } from "@/store/clientStore";
 import type { BodyMapProps } from "@/types/recovery";
+import { normalizeGender } from "@/lib/utils";
 
 // Map from our app's muscle names to library slugs (back-visible muscles)
 const BACK_MUSCLE_MAP: Array<{ muscle: string; slug: Slug }> = [
@@ -33,7 +34,7 @@ const SLUG_TO_MUSCLE: Record<string, string> = {
 
 const BACK_DATA = BACK_MUSCLE_MAP.map(({ slug }) => ({ slug, intensity: 1 }));
 
-export function BodyMapBack({ muscles, onSelectMuscle }: BodyMapProps) {
+export function BodyMapBack({ muscles, onSelectMuscle, gender }: BodyMapProps) {
   const { mounted, isDark, hydrate } = useClientStore();
   useEffect(hydrate, [hydrate]);
 
@@ -48,7 +49,7 @@ export function BodyMapBack({ muscles, onSelectMuscle }: BodyMapProps) {
       <Body
         data={BACK_DATA}
         side="back"
-        gender="male"
+        gender={normalizeGender(gender) ?? "male"}
         colors={[isDark ? "#2E2E2B" : "#D8D6CF"]}
         border={isDark ? "#1A1A18" : "#C4C2BB"}
         onBodyPartClick={(part) => {

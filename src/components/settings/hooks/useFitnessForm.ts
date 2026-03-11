@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GOALS } from "@/components/ui/GoalSelector";
-import type { UnitSystem, UserProfile } from "@/types/user";
+import type { UnitSystem, UserProfile, Gender } from "@/types/user";
 import {
   displayHeight,
   displayWeight,
   resolveHeightToInches,
   resolveWeightToLbs,
 } from "@/lib/units";
+import { normalizeGender } from "@/lib/utils";
 
 export function useFitnessForm(
   user: UserProfile | null,
@@ -35,6 +36,7 @@ export function useFitnessForm(
     const nonPreset = g.find((v) => !(GOALS as readonly string[]).includes(v));
     return nonPreset ?? "";
   });
+  const [gender, setGender] = useState<Gender>(() => normalizeGender(user?.gender));
   const [saving, setSaving] = useState(false);
 
   const isCustomMode = customGoal.trim().length > 0;
@@ -57,6 +59,7 @@ export function useFitnessForm(
     const nonPreset = g.find((v) => !(GOALS as readonly string[]).includes(v));
     setGoals(presets);
     setCustomGoal(nonPreset ?? "");
+    setGender(normalizeGender(user.gender));
   }, [user, unitSystem]);
 
   // Reset saving state when drawer closes
@@ -84,10 +87,12 @@ export function useFitnessForm(
   const arraysEqual = (a: string[], b: string[]) =>
     a.length === b.length && a.every((v, i) => v === b[i]);
 
+  const userGender = normalizeGender(user?.gender);
   const isFitnessDirty =
     resolvedHeight !== (user?.height_inches ?? null) ||
     resolvedWeight !== (user?.weight_lbs ?? null) ||
-    !arraysEqual(resolvedGoals, user?.fitness_goals ?? []);
+    !arraysEqual(resolvedGoals, user?.fitness_goals ?? []) ||
+    gender !== userGender;
 
   async function handleSaveFitness() {
     setSaving(true);
@@ -99,6 +104,7 @@ export function useFitnessForm(
         height_inches: resolvedHeight,
         weight_lbs: resolvedWeight,
         fitness_goals: resolvedGoals,
+        gender,
       }),
     });
     setSaving(false);
@@ -117,6 +123,8 @@ export function useFitnessForm(
     setGoals,
     customGoal,
     setCustomGoal,
+    gender,
+    setGender,
     saving,
     isCustomMode,
     isFitnessDirty,

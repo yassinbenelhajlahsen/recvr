@@ -15,7 +15,10 @@ export type MuscleRecovery = {
   lastWorkoutNotes: string | null;
 };
 
+import type { Gender } from "@/types/user";
+
 export type BodyMapProps = {
   muscles: Record<string, { recoveryPct: number } | undefined>;
   onSelectMuscle?: (muscle: string) => void;
+  gender?: Gender;
 };

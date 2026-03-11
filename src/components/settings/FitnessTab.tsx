@@ -1,6 +1,7 @@
 "use client";
 
 import { GoalSelector } from "@/components/ui/GoalSelector";
+import { GenderSelector } from "@/components/ui/GenderSelector";
 import { MetricsInputs } from "@/components/onboarding/MetricsInputs";
 import { SectionHeader } from "./SectionHeader";
 import { useFitnessForm } from "./hooks/useFitnessForm";
@@ -18,6 +19,8 @@ export function FitnessTab({ user, open, onClose }: FitnessTabProps) {
     setGoals,
     customGoal,
     setCustomGoal,
+    gender,
+    setGender,
     saving,
     isCustomMode,
     isFitnessDirty,
@@ -27,6 +30,15 @@ export function FitnessTab({ user, open, onClose }: FitnessTabProps) {
 
   return (
     <>
+      {/* ── Gender ── */}
+      <section>
+        <SectionHeader title="Gender" />
+        <GenderSelector gender={gender} onChange={setGender} />
+        <p className="mt-2 text-xs text-muted">
+          Used to personalize body maps and workout suggestions. Tap again to deselect.
+        </p>
+      </section>
+
       {/* ── Body Metrics ── */}
       <section>
         <SectionHeader title="Body Metrics" />
@@ -61,13 +73,15 @@ export function FitnessTab({ user, open, onClose }: FitnessTabProps) {
         </p>
       </section>
 
-      <button
-        className="w-full px-4 py-3 rounded-xl bg-accent text-white text-sm font-semibold transition-opacity disabled:opacity-40 enabled:hover:opacity-90"
-        disabled={!isFitnessDirty || saving}
-        onClick={handleSaveFitness}
-      >
-        {saving ? "Saving…" : "Save changes"}
-      </button>
+      <div className="sticky bottom-0 -mx-6 px-6 pt-4 pb-5 bg-elevated border-t border-border">
+        <button
+          className="w-full px-4 py-3 rounded-xl bg-accent text-white text-sm font-semibold transition-opacity disabled:opacity-40 enabled:hover:opacity-90"
+          disabled={!isFitnessDirty || saving}
+          onClick={handleSaveFitness}
+        >
+          {saving ? "Saving…" : "Save changes"}
+        </button>
+      </div>
     </>
   );
 }
