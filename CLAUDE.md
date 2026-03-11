@@ -24,6 +24,7 @@ npx prisma studio        # Open Prisma Studio (DB GUI)
 - **Extract hooks for non-trivial logic** — `useState` + `useEffect` + handlers → colocated `hooks/` directory.
 - **No duplicate UI** — shared UI lives in `src/components/ui/`.
 - **All shared types in `src/types/`** — use `import type { Foo } from "@/types/workout"`.
+- **`useRef` typing (React 19)**: `useRef<T>(null)` returns `RefObject<T | null>` — prop types that accept refs must use `RefObject<T | null>`, not `RefObject<T>`.
 - **Shared icons in `src/components/ui/icons.tsx`** — never define SVG icons inline.
 - **Colocate hooks** — single-feature hooks go in `hooks/` next to the component. App-wide hooks go in `src/lib/` or `src/hooks/`.
 
@@ -139,8 +140,10 @@ src/
 
 - `SuggestionTrigger` (server-rendered, receives recovery data) opens a `size="lg"` Drawer
 - `SuggestionPanel` + `useSuggestion` hook handle idle/loading/result states; hook uses AbortController to cancel in-flight requests on dismiss
-- API route `POST /api/suggest` calls OpenAI via singleton `src/lib/openai.ts`; do NOT trust client-supplied recovery data — always recompute server-side
-- Wrap OpenAI calls in try/catch and JSON.parse in try/catch — AI can return errors or malformed JSON
+- Client POSTs `{ selectedPresets: string[] }` — values are multi-select chips from hardcoded `PRESET_GROUPS` (Focus / Duration / Equipment / Style)
+- API route `POST /api/suggest` validates `selectedPresets` against a hardcoded `ALLOWED_PRESETS` whitelist — any value not in the set is silently dropped; no freeform string is accepted
+- Recovery data is never trusted from the client — always recomputed server-side via `calculateRecovery(userId)`
+- Calls OpenAI `gpt-4o-mini` with `response_format: json_object`; wrap both the OpenAI call and `JSON.parse` in try/catch
 
 ## Environment Variables
 

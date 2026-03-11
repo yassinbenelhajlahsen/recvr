@@ -56,10 +56,6 @@ export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
     });
   }
 
-  function buildMessage() {
-    return selected.size > 0 ? Array.from(selected).join(", ") : undefined;
-  }
-
   function handleDismiss() {
     dismiss();
     onDismiss?.();
@@ -252,7 +248,7 @@ export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
                 </p>
               )}
               <button
-                onClick={() => generate(buildMessage())}
+                onClick={() => generate(selected.size > 0 ? Array.from(selected) : undefined)}
                 className="w-full bg-accent text-white text-sm font-medium rounded-xl px-4 py-3 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
                 <SparklesIcon />

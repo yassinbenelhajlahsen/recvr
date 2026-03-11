@@ -17,7 +17,7 @@ export function useSuggestion() {
   });
   const abortRef = useRef<AbortController | null>(null);
 
-  async function generate(userMessage?: string) {
+  async function generate(selectedPresets?: string[]) {
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 
@@ -26,7 +26,7 @@ export function useSuggestion() {
       const res = await fetch("/api/suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userMessage: userMessage || undefined }),
+        body: JSON.stringify({ selectedPresets: selectedPresets?.length ? selectedPresets : undefined }),
         signal: abortRef.current.signal,
       });
       const data = await res.json();
