@@ -35,7 +35,7 @@ const PRESET_GROUPS = [
   },
   {
     label: "Equipment",
-    options: ["No equipment", "Dumbbells only", "Barbell + rack"],
+    options: ["No equipment", "Dumbbells only", "Barbell + rack", "Cable machine"],
   },
   {
     label: "Style",

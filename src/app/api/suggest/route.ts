@@ -45,7 +45,7 @@ const ALLOWED_PRESETS = new Set([
   // Duration
   "30 minutes", "45 minutes", "60 minutes",
   // Equipment
-  "No equipment", "Dumbbells only", "Barbell + rack",
+  "No equipment", "Dumbbells only", "Barbell + rack", "Cable machine",
   // Style
   "Strength", "Hypertrophy", "HIIT", "Active recovery",
 ]);

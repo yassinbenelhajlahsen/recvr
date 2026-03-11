@@ -140,7 +140,7 @@ src/
 
 - `SuggestionTrigger` (server-rendered, receives recovery data) opens a `size="lg"` Drawer
 - `SuggestionPanel` + `useSuggestion` hook handle idle/loading/result states; hook uses AbortController to cancel in-flight requests on dismiss
-- Client POSTs `{ selectedPresets: string[] }` — values are multi-select chips from hardcoded `PRESET_GROUPS` (Focus / Duration / Equipment / Style)
+- Client POSTs `{ selectedPresets: string[] }` — values are multi-select chips from hardcoded `PRESET_GROUPS` (Focus / Duration / Equipment / Style); Equipment options: No equipment, Dumbbells only, Barbell + rack, Cable machine
 - API route `POST /api/suggest` validates `selectedPresets` against a hardcoded `ALLOWED_PRESETS` whitelist — any value not in the set is silently dropped; no freeform string is accepted
 - Recovery data is never trusted from the client — always recomputed server-side via `calculateRecovery(userId)`
 - Calls OpenAI `gpt-4o-mini` with `response_format: json_object`; wrap both the OpenAI call and `JSON.parse` in try/catch
