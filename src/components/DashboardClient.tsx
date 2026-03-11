@@ -1,14 +1,23 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useWorkoutStore } from "@/store/workoutStore";
 import { WorkoutDetailDrawer } from "@/components/workout/WorkoutDetailDrawer";
 import { WorkoutsFilter } from "@/components/workout/WorkoutsFilter";
 import { RecoveryPanel } from "@/components/recovery/RecoveryPanel";
 import type { DashboardClientProps as Props } from "@/types/workout";
 
-export function DashboardClient({ displayName, workouts, hasFilters, recovery }: Props) {
+export function DashboardClient({ displayName, workouts, hasFilters, recovery, openDraftId }: Props) {
   const openDrawer = useWorkoutStore((s) => s.openDrawer);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (openDraftId) {
+      openDrawer(openDraftId);
+      router.replace("/", { scroll: false });
+    }
+  }, [openDraftId, openDrawer, router]);
 
   const firstName = displayName?.split(/[\s@]/)[0];
 
@@ -86,6 +95,11 @@ export function DashboardClient({ displayName, workouts, hasFilters, recovery }:
                             <p className="font-semibold text-primary group-hover:text-accent transition-colors">
                               {w.dateFormatted}
                             </p>
+                            {w.isDraft && (
+                              <span className="text-xs font-medium text-recovery-yellow bg-recovery-yellow/10 border border-recovery-yellow/20 rounded-full px-2 py-0.5">
+                                Draft
+                              </span>
+                            )}
                             {w.durationMinutes && (
                               <span className="text-xs text-muted bg-bg rounded-md px-2 py-0.5 tabular-nums">
                                 {w.durationMinutes} min

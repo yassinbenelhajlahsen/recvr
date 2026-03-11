@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { DeleteWorkoutButton } from "@/components/workout/DeleteWorkoutButton";
 import type { WorkoutDetail, WorkoutPreview } from "@/types/workout";
 
@@ -13,6 +14,30 @@ type Props = {
 
 export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDelete }: Props) {
   const totalSets = workout?.workout_exercises.reduce((sum, we) => sum + we.sets.length, 0) ?? 0;
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+
+  async function handlePublish() {
+    if (!workout) return;
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const res = await fetch(`/api/workouts/${workout.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_draft: false }),
+      });
+      if (!res.ok) {
+        setPublishError("Failed to save workout");
+        return;
+      }
+      onDelete(); // closes drawer and calls router.refresh() in WorkoutDetailDrawer
+    } catch {
+      setPublishError("Failed to save workout");
+    } finally {
+      setPublishing(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -65,6 +90,15 @@ export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDel
               <span className="tabular-nums">{totalSets} {totalSets === 1 ? "set" : "sets"}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              {workout.is_draft && (
+                <button
+                  onClick={handlePublish}
+                  disabled={publishing}
+                  className="text-sm font-medium bg-accent text-white rounded-lg px-3 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {publishing ? "Saving..." : "Save Workout"}
+                </button>
+              )}
               <button
                 onClick={onEdit}
                 className="text-sm font-medium text-primary border border-border rounded-lg px-3 py-1.5 hover:bg-surface transition-colors"
@@ -74,6 +108,9 @@ export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDel
               <DeleteWorkoutButton workoutId={workout.id} onDelete={onDelete} />
             </div>
           </div>
+          {publishError && (
+            <p className="text-xs text-danger">{publishError}</p>
+          )}
 
           {workout.notes && (
             <p className="text-sm text-secondary italic border-l-2 border-accent/30 pl-3">

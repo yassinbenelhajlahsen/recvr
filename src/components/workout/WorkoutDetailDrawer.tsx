@@ -37,6 +37,7 @@ export function WorkoutDetailDrawer() {
       date: data.date,
       duration_minutes: data.duration_minutes,
       notes: data.notes,
+      is_draft: workout?.is_draft,
       workout_exercises: data.workout_exercises.map((we, i) => ({
         ...we,
         order: i,
@@ -109,6 +110,7 @@ export function WorkoutDetailDrawer() {
               <WorkoutForm
                 compact
                 onSave={handleCreateSave}
+                onDraftSave={closeDrawer}
                 onCancel={closeDrawer}
               />
             </motion.div>

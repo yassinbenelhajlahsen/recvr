@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { SparklesIcon } from "@/components/ui/icons";
 import { useSuggestion } from "./hooks/useSuggestion";
+import { useSaveDraft } from "./hooks/useSaveDraft";
 import type { SuggestedExercise } from "@/types/suggestion";
 import type { MuscleRecovery, RecoveryStatus } from "@/types/recovery";
 
@@ -45,6 +47,8 @@ const PRESET_GROUPS = [
 
 export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
   const { suggestion, isLoading, error, generate, dismiss } = useSuggestion();
+  const { saveDraft, saving, saveError } = useSaveDraft();
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   function togglePreset(option: string) {
@@ -59,6 +63,14 @@ export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
   function handleDismiss() {
     dismiss();
     onDismiss?.();
+  }
+
+  async function handleSaveAsDraft() {
+    if (!suggestion) return;
+    const id = await saveDraft(suggestion);
+    if (id) {
+      router.push(`/?draft=${id}`);
+    }
   }
 
   // Sorted: recovered first, then partial, then fatigued
@@ -157,12 +169,24 @@ export function SuggestionPanel({ recovery, onDismiss }: SuggestionPanelProps) {
 
             {/* Sticky footer */}
             <div className="w-full border-t border-border-subtle bg-elevated shrink-0">
-              <button
-                onClick={handleDismiss}
-                className="w-full text-md font-medium text-muted py-4 hover:text-secondary hover:bg-surface transition-colors"
-              >
-                Dismiss
-              </button>
+              {saveError && (
+                <p className="text-xs text-danger text-center px-4 pt-3">{saveError}</p>
+              )}
+              <div className="flex">
+                <button
+                  onClick={handleDismiss}
+                  className="flex-1 text-md font-medium text-muted py-4 hover:text-secondary hover:bg-surface transition-colors border-r border-border-subtle"
+                >
+                  Dismiss
+                </button>
+                <button
+                  onClick={handleSaveAsDraft}
+                  disabled={saving}
+                  className="flex-1 text-md font-medium text-accent py-4 hover:bg-surface transition-colors disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Save as Draft"}
+                </button>
+              </div>
             </div>
           </motion.div>
         ) : (

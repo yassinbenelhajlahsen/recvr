@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { toLocalISODate } from "@/lib/utils";
 import type { ExerciseEntry, Exercise, WorkoutFormInitialData, WorkoutFormProps, SessionSummaryData } from "@/types/workout";
 
 interface UseWorkoutFormOptions {
@@ -8,6 +9,7 @@ interface UseWorkoutFormOptions {
   initialData?: WorkoutFormInitialData;
   exercises: ExerciseEntry[];
   onSave: WorkoutFormProps["onSave"];
+  onDraftSave: WorkoutFormProps["onDraftSave"];
   addExercise: (ex: Exercise) => void;
   closeSearch: () => void;
   clearCache: () => void;
@@ -18,6 +20,7 @@ export function useWorkoutForm({
   initialData,
   exercises,
   onSave,
+  onDraftSave,
   addExercise,
   closeSearch,
   clearCache,
@@ -25,14 +28,7 @@ export function useWorkoutForm({
   const router = useRouter();
   const isEdit = !!workoutId;
 
-  const [date, setDate] = useState(() => {
-    if (initialData?.date) return initialData.date;
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  });
+  const [date, setDate] = useState(() => initialData?.date ?? toLocalISODate());
   const [notes, setNotes] = useState(initialData?.notes ?? "");
   const [duration, setDuration] = useState(
     initialData?.duration_minutes != null ? String(initialData.duration_minutes) : ""
@@ -43,6 +39,7 @@ export function useWorkoutForm({
 
   const [customLoading, setCustomLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [error, setError] = useState("");
 
   function handleAddExercise(ex: Exercise) {
@@ -77,9 +74,7 @@ export function useWorkoutForm({
   }
 
   async function handleSubmit() {
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    if (date > todayStr) {
+    if (date > toLocalISODate()) {
       setError("Date cannot be in the future");
       return;
     }
@@ -152,6 +147,46 @@ export function useWorkoutForm({
     }
   }
 
+  async function handleSaveAsDraft() {
+    if (exercises.length === 0) {
+      setError("Add at least one exercise");
+      return;
+    }
+    setError("");
+    setSavingDraft(true);
+    try {
+      const body = {
+        date,
+        notes: notes || null,
+        duration_minutes: duration || null,
+        body_weight: bodyWeight ? parseFloat(bodyWeight) : null,
+        is_draft: true,
+        exercises: exercises.map((ex, i) => ({
+          exercise_id: ex.exercise_id,
+          order: i,
+          sets: ex.sets
+            .filter((s) => s.reps && s.weight)
+            .map((s) => ({
+              set_number: s.set_number,
+              reps: s.reps,
+              weight: s.weight,
+            })),
+        })),
+      };
+      const res = await fetch("/api/workouts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error();
+      router.refresh();
+      if (onDraftSave) onDraftSave();
+    } catch {
+      setError("Failed to save draft. Please try again.");
+      setSavingDraft(false);
+    }
+  }
+
   return {
     date,
     setDate,
@@ -162,9 +197,11 @@ export function useWorkoutForm({
     bodyWeight,
     setBodyWeight,
     saving,
+    savingDraft,
     error,
     customLoading,
     handleSubmit,
+    handleSaveAsDraft,
     createCustomExercise,
   };
 }

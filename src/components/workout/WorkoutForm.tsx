@@ -10,17 +10,23 @@ import { useWorkoutForm } from "@/components/workout/hooks/useWorkoutForm";
 import { ExerciseSearchPanel } from "@/components/workout/ExerciseSearchPanel";
 import { ExerciseCard } from "@/components/workout/ExerciseCard";
 
+import { toLocalISODate } from "@/lib/utils";
 import type { Exercise, WorkoutFormProps as Props } from "@/types/workout";
 
-export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact }: Props) {
+export function WorkoutForm({ workoutId, initialData, onSave, onDraftSave, onCancel, compact }: Props) {
   const isEdit = !!workoutId;
-  const today = useMemo(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }, []);
+
+  const today = useMemo(() => toLocalISODate(), []);
 
   const { exercises, addExercise, removeExercise, addSet, removeSet, updateSet } =
     useExerciseList(initialData);
+
+  const isFormComplete = useMemo(
+    () =>
+      exercises.length > 0 &&
+      exercises.every((ex) => ex.sets.length > 0 && ex.sets.every((s) => s.reps && s.weight)),
+    [exercises]
+  );
 
   const {
     showSearch,
@@ -47,15 +53,18 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
     bodyWeight,
     setBodyWeight,
     saving,
+    savingDraft,
     error,
     customLoading,
     handleSubmit,
+    handleSaveAsDraft,
     createCustomExercise,
   } = useWorkoutForm({
     workoutId,
     initialData,
     exercises,
     onSave,
+    onDraftSave,
     addExercise,
     closeSearch,
     clearCache,
@@ -68,26 +77,49 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
 
   const actionButtons = (
     <div className="space-y-2">
-      <div className="flex items-center gap-4">
-        <button
-          onClick={handleSubmit}
-          disabled={saving}
-          className="bg-accent text-white text-sm font-semibold rounded-lg px-6 py-3 hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {saving ? "Saving…" : isEdit ? "Save Changes" : "Log Workout"}
-        </button>
+      <div className="flex items-center gap-4 overflow-hidden h-11">
+        <AnimatePresence initial={false}>
+          {(isEdit || isFormComplete) && (
+            <motion.div
+              key="primary-actions"
+              className="flex items-center gap-4"
+              initial={{ opacity: 0, x: -16, width: 0 }}
+              animate={{ opacity: 1, x: 0, width: "auto" }}
+              exit={{ opacity: 0, x: -16, width: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <button
+                onClick={handleSubmit}
+                disabled={saving || savingDraft}
+                className="shrink-0 bg-accent text-white text-sm font-semibold rounded-lg px-6 py-3 hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {saving ? "Saving…" : isEdit ? "Save Changes" : "Log Workout"}
+              </button>
+              {!isEdit && (
+                <button
+                  type="button"
+                  onClick={handleSaveAsDraft}
+                  disabled={saving || savingDraft}
+                  className="shrink-0 text-sm font-medium text-secondary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {savingDraft ? "Saving…" : "Save as Draft"}
+                </button>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
         {onCancel ? (
           <button
             type="button"
             onClick={onCancel}
-            className="text-sm font-medium text-secondary hover:text-primary transition-colors"
+            className="text-sm font-medium text-muted hover:text-secondary transition-colors"
           >
             Cancel
           </button>
         ) : (
           <Link
             href={isEdit ? `/workouts/${workoutId}` : "/workouts"}
-            className="text-sm font-medium text-secondary hover:text-primary transition-colors"
+            className="text-sm font-medium text-muted hover:text-secondary transition-colors"
           >
             Cancel
           </Link>
@@ -171,12 +203,13 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
           )}
         </div>
 
-        <AnimatePresence>
-          {showSearch && (
+        <AnimatePresence mode="popLayout">
+          {showSearch ? (
             <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
+              key="search"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
             >
               <ExerciseSearchPanel
@@ -195,15 +228,20 @@ export function WorkoutForm({ workoutId, initialData, onSave, onCancel, compact 
                 customLoading={customLoading}
               />
             </motion.div>
-          )}
+          ) : exercises.length === 0 ? (
+            <motion.div
+              key="empty-state"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="rounded-xl bg-surface border border-border-subtle border-dashed p-12 text-center"
+            >
+              <p className="font-display text-xl text-muted">No exercises added yet</p>
+              <p className="text-sm text-muted mt-1">Tap &ldquo;Add Exercise&rdquo; to get started</p>
+            </motion.div>
+          ) : null}
         </AnimatePresence>
-
-        {exercises.length === 0 && !showSearch && (
-          <div className="rounded-xl bg-surface border border-border-subtle border-dashed p-12 text-center">
-            <p className="font-display text-xl text-muted">No exercises added yet</p>
-            <p className="text-sm text-muted mt-1">Tap &ldquo;Add Exercise&rdquo; to get started</p>
-          </div>
-        )}
 
         {exercises.map((ex) => (
           <ExerciseCard
