@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense } from "react";
-import { motion } from "framer-motion";
 import { useWorkoutStore } from "@/store/workoutStore";
 import { WorkoutDetailDrawer } from "@/components/workout/WorkoutDetailDrawer";
 import { WorkoutsFilter } from "@/components/workout/WorkoutsFilter";
@@ -76,11 +75,8 @@ export function DashboardClient({ displayName, workouts, hasFilters, recovery }:
                       : w.exerciseNames.join(", ");
 
                   return (
-                    <motion.button
+                    <button
                       key={w.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2, delay: i * 0.04, ease: "easeOut" }}
                       onClick={() => openDrawer(w.id, w)}
                       className="group w-full text-left block rounded-xl bg-surface border border-border-subtle px-6 py-5 hover:bg-elevated hover:shadow-md transition-all"
                     >
@@ -114,7 +110,7 @@ export function DashboardClient({ displayName, workouts, hasFilters, recovery }:
                           </p>
                         </div>
                       </div>
-                    </motion.button>
+                    </button>
                   );
                 })}
               </div>
