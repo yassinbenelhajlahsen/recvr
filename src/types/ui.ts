@@ -33,7 +33,7 @@ export type FloatingInputProps = {
   label: string;
   leftIcon?: ReactNode;
   rightSlot?: ReactNode;
-  inputRef?: RefObject<HTMLInputElement>;
+  inputRef?: RefObject<HTMLInputElement | null>;
   autoComplete?: string;
   minLength?: number;
   required?: boolean;
