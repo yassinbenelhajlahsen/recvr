@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { mutate as globalMutate } from "swr";
 import { DeleteWorkoutButton } from "@/components/workout/DeleteWorkoutButton";
+import { fetchWithAuth } from "@/lib/fetch";
 import type { WorkoutDetail, WorkoutPreview } from "@/types/workout";
 
 type Props = {
@@ -12,8 +14,16 @@ type Props = {
   onDelete: () => void;
 };
 
-export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDelete }: Props) {
-  const totalSets = workout?.workout_exercises.reduce((sum, we) => sum + we.sets.length, 0) ?? 0;
+export function WorkoutViewDetail({
+  workout,
+  loading,
+  previewData,
+  onEdit,
+  onDelete,
+}: Props) {
+  const totalSets =
+    workout?.workout_exercises.reduce((sum, we) => sum + we.sets.length, 0) ??
+    0;
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
 
@@ -22,7 +32,7 @@ export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDel
     setPublishing(true);
     setPublishError(null);
     try {
-      const res = await fetch(`/api/workouts/${workout.id}`, {
+      const res = await fetchWithAuth(`/api/workouts/${workout.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_draft: false }),
@@ -31,6 +41,13 @@ export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDel
         setPublishError("Failed to save workout");
         return;
       }
+      globalMutate(
+        (k) => typeof k === "string" && k.startsWith("/api/workouts/"),
+        undefined,
+        { revalidate: false },
+      );
+      globalMutate("/api/recovery");
+      globalMutate("/api/progress");
       onDelete(); // closes drawer and calls router.refresh() in WorkoutDetailDrawer
     } catch {
       setPublishError("Failed to save workout");
@@ -46,9 +63,14 @@ export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDel
         <>
           <div className="flex items-center gap-3 text-sm text-secondary">
             {previewData.durationMinutes && (
-              <span className="tabular-nums">{previewData.durationMinutes} min</span>
+              <span className="tabular-nums">
+                {previewData.durationMinutes} min
+              </span>
             )}
-            <span className="tabular-nums">{previewData.totalSets} {previewData.totalSets === 1 ? "set" : "sets"}</span>
+            <span className="tabular-nums">
+              {previewData.totalSets}{" "}
+              {previewData.totalSets === 1 ? "set" : "sets"}
+            </span>
           </div>
           {previewData.notes && (
             <p className="text-sm text-secondary italic border-l-2 border-accent/30 pl-3">
@@ -57,7 +79,10 @@ export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDel
           )}
           <div className="space-y-3">
             {previewData.exerciseNames.map((name) => (
-              <div key={name} className="rounded-xl bg-surface border border-border-subtle overflow-hidden">
+              <div
+                key={name}
+                className="rounded-xl bg-surface border border-border-subtle overflow-hidden"
+              >
                 <div className="px-5 py-3.5 border-b border-border">
                   <p className="font-semibold text-sm text-primary">{name}</p>
                 </div>
@@ -81,13 +106,20 @@ export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDel
 
       {/* Loaded workout */}
       {!loading && workout && (
-        <>
+        <div>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 text-sm text-secondary">
               {workout.duration_minutes && (
-                <span className="tabular-nums">{workout.duration_minutes} min</span>
+                <span className="tabular-nums">
+                  {workout.duration_minutes} min
+                </span>
               )}
-              <span className="tabular-nums">{totalSets} {totalSets === 1 ? "set" : "sets"}</span>
+              <span className="tabular-nums">
+                {totalSets} {totalSets === 1 ? "set" : "sets"}
+              </span>
+              {workout.body_weight && (
+                <span className="tabular-nums">{workout.body_weight} lbs</span>
+              )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {workout.is_draft && (
@@ -96,7 +128,7 @@ export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDel
                   disabled={publishing}
                   className="text-sm font-medium bg-accent text-white rounded-lg px-3 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  {publishing ? "Saving..." : "Save Workout"}
+                  {publishing ? "Saving..." : "Save Draft"}
                 </button>
               )}
               <button
@@ -113,19 +145,27 @@ export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDel
           )}
 
           {workout.notes && (
-            <p className="text-sm text-secondary italic border-l-2 border-accent/30 pl-3">
+            <p className="text-sm text-secondary italic border-l-2 border-accent/30 pl-3 mb-2 mt-4">
               {workout.notes}
             </p>
           )}
 
           <div className="space-y-3">
             {workout.workout_exercises.map((we) => (
-              <div key={we.id} className="rounded-xl bg-surface border border-border-subtle overflow-hidden">
+              <div
+                key={we.id}
+                className="rounded-xl bg-surface border border-border-subtle overflow-hidden"
+              >
                 <div className="px-5 py-3.5 border-b border-border">
-                  <p className="font-semibold text-sm text-primary">{we.exercise.name}</p>
+                  <p className="font-semibold text-sm text-primary">
+                    {we.exercise.name}
+                  </p>
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
                     {we.exercise.muscle_groups.map((m) => (
-                      <span key={m} className="text-xs text-muted bg-bg rounded-md px-2 py-0.5">
+                      <span
+                        key={m}
+                        className="text-xs text-muted bg-bg rounded-md px-2 py-0.5"
+                      >
                         {m}
                       </span>
                     ))}
@@ -142,16 +182,22 @@ export function WorkoutViewDetail({ workout, loading, previewData, onEdit, onDel
                       key={s.id}
                       className="grid grid-cols-[40px_1fr_1fr] gap-4 py-1.5 border-b border-border-subtle last:border-0"
                     >
-                      <span className="text-sm font-medium text-muted tabular-nums">{s.set_number}</span>
-                      <span className="text-sm font-medium text-primary tabular-nums">{s.reps}</span>
-                      <span className="text-sm font-medium text-primary tabular-nums">{s.weight} lbs</span>
+                      <span className="text-sm font-medium text-muted tabular-nums">
+                        {s.set_number}
+                      </span>
+                      <span className="text-sm font-medium text-primary tabular-nums">
+                        {s.reps}
+                      </span>
+                      <span className="text-sm font-medium text-primary tabular-nums">
+                        {s.weight} lbs
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

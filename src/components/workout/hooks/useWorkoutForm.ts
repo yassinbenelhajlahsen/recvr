@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { mutate as globalMutate } from "swr";
 
 import { toLocalISODate } from "@/lib/utils";
 import { fetchWithAuth } from "@/lib/fetch";
@@ -66,7 +67,7 @@ export function useWorkoutForm({
       });
       if (!res.ok) throw new Error();
       handleAddExercise(await res.json());
-      clearCache();
+      clearCache(); // also invalidates SWR exercise keys via useExerciseSearch.clearCache()
     } catch {
       setError("Failed to create custom exercise");
     } finally {
@@ -119,6 +120,14 @@ export function useWorkoutForm({
       );
       if (!res.ok) throw new Error();
       const { id } = await res.json();
+      // Invalidate SWR cache for this workout + recovery (reflects new volume)
+      globalMutate(
+        (k) => typeof k === "string" && k.startsWith("/api/workouts/"),
+        undefined,
+        { revalidate: false }
+      );
+      globalMutate("/api/recovery");
+      globalMutate("/api/progress");
       if (onSave) {
         const saveData: SessionSummaryData = {
           id,

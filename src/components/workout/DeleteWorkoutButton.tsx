@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { mutate as globalMutate } from "swr";
+import { fetchWithAuth } from "@/lib/fetch";
 
 export function DeleteWorkoutButton({
   workoutId,
@@ -31,7 +33,14 @@ export function DeleteWorkoutButton({
     }
     setLoading(true);
     try {
-      await fetch(`/api/workouts/${workoutId}`, { method: "DELETE" });
+      await fetchWithAuth(`/api/workouts/${workoutId}`, { method: "DELETE" });
+      globalMutate(
+        (k) => typeof k === "string" && k.startsWith("/api/workouts/"),
+        undefined,
+        { revalidate: false }
+      );
+      globalMutate("/api/recovery");
+      globalMutate("/api/progress");
       if (onDelete) {
         onDelete();
       } else {
