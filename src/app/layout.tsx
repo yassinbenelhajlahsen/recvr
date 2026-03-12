@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Fraunces } from "next/font/google";
-import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { Providers } from "@/components/layout/Providers";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageTransition } from "@/components/layout/PageTransition";
 import "./globals.css";
@@ -45,12 +45,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} antialiased font-sans bg-bg text-primary`}
       >
-        <ThemeProvider>
+        <Providers>
           <Navbar />
           <main>
             <PageTransition>{children}</PageTransition>
           </main>
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
