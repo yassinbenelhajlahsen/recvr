@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { invalidateExercises, setSuggestionDraftId } from "@/lib/cache";
+import { logger, withLogging } from "@/lib/logger";
 import type { WorkoutSuggestion, SuggestedExercise } from "@/types/suggestion";
 
-export async function POST(request: Request) {
+export const POST = withLogging(async function POST(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -36,6 +37,19 @@ export async function POST(request: Request) {
   }
 
   const now = new Date();
+
+  if (date) {
+    if (isNaN(new Date(date).getTime())) {
+      return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
+    }
+    const tomorrow = new Date();
+    tomorrow.setUTCHours(0, 0, 0, 0);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 2);
+    if (new Date(`${date}T00:00:00Z`) >= tomorrow) {
+      return NextResponse.json({ error: "Date cannot be in the future" }, { status: 400 });
+    }
+  }
+
   const storedDate = date
     ? new Date(`${date}T${now.toISOString().slice(11)}`)
     : now;
@@ -46,40 +60,44 @@ export async function POST(request: Request) {
     timeZone: "UTC",
   });
 
-  const workout = await prisma.workout.create({
-    data: {
-      user_id: user.id,
-      date: storedDate,
-      notes: `Generated from recovery analysis on ${dateLabel}.`,
-      duration_minutes: suggestion.estimatedMinutes ?? null,
-      is_draft: true,
-      source: "suggested",
-      workout_exercises: {
-        create: suggestion.exercises.map((ex: SuggestedExercise, i: number) => ({
-          exercise_id: resolvedIds[i],
-          order: i,
-          sets: {
-            create: ex.sets.map((s, j) => ({
-              set_number: j + 1,
-              reps: s.reps,
-              weight: s.weight ?? 0,
-            })),
-          },
-        })),
+  try {
+    const workout = await prisma.workout.create({
+      data: {
+        user_id: user.id,
+        date: storedDate,
+        notes: `Generated from recovery analysis on ${dateLabel}.`,
+        is_draft: true,
+        source: "suggested",
+        workout_exercises: {
+          create: suggestion.exercises.map((ex: SuggestedExercise, i: number) => ({
+            exercise_id: resolvedIds[i],
+            order: i,
+            sets: {
+              create: ex.sets.map((s, j) => ({
+                set_number: j + 1,
+                reps: s.reps ?? 0,
+                weight: s.weight ?? 0,
+              })),
+            },
+          })),
+        },
       },
-    },
-    select: { id: true },
-  });
+      select: { id: true },
+    });
 
-  if (createdCustomExercise) {
-    await invalidateExercises(user.id);
+    if (createdCustomExercise) {
+      await invalidateExercises(user.id);
+    }
+
+    // Track that a draft was created from the current suggestion (for UI dedup)
+    void setSuggestionDraftId(user.id, workout.id);
+
+    return NextResponse.json({ id: workout.id }, { status: 201 });
+  } catch (err) {
+    logger.error({ err }, "POST /api/workouts/draft failed");
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
-
-  // Track that a draft was created from the current suggestion (for UI dedup)
-  void setSuggestionDraftId(user.id, workout.id);
-
-  return NextResponse.json({ id: workout.id }, { status: 201 });
-}
+});
 
 async function resolveExercise(
   ex: SuggestedExercise,
@@ -100,7 +118,8 @@ async function resolveExercise(
   );
   if (fuzzy) return { id: fuzzy.id, created: false };
 
-  // Create a custom exercise for this user
+  // Create a custom exercise for this user and add to allExercises so subsequent
+  // iterations don't create duplicates for the same unknown name.
   const created = await prisma.exercise.create({
     data: {
       name: ex.name,
@@ -109,5 +128,6 @@ async function resolveExercise(
     },
     select: { id: true },
   });
+  allExercises.push({ id: created.id, name: ex.name, muscle_groups: ex.muscleGroups });
   return { id: created.id, created: true };
 }
