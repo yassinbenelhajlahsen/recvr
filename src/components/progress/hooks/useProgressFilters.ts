@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   BodyWeightChartPoint,
   BodyWeightEntry,
@@ -72,6 +72,13 @@ export function useProgressFilters(
     exercises[0]?.id ?? "",
   );
   const [dateRange, setDateRange] = useState<DateRangePreset>("90d");
+
+  // When data arrives from SWR (exercises goes from [] → populated), initialize selection
+  useEffect(() => {
+    if (selectedExerciseId === "" && exercises.length > 0) {
+      setSelectedExerciseId(exercises[0].id);
+    }
+  }, [exercises, selectedExerciseId]);
 
   const chartData = useMemo<ChartDataPoint[]>(() => {
     const sessions = sessionsByExercise[selectedExerciseId] ?? [];

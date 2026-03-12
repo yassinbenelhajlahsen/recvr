@@ -5,9 +5,15 @@ import { useProgressFilters } from "./hooks/useProgressFilters";
 import { ExerciseSelector } from "./ExerciseSelector";
 import { DateRangeSelector } from "./DateRangeSelector";
 import { ProgressChart } from "./ProgressChart";
-import type { ProgressClientProps } from "@/types/progress";
+import { useProgress } from "@/lib/hooks";
 
-export function ProgressClient({ exercises, sessionsByExercise, bodyWeightHistory }: ProgressClientProps) {
+export function ProgressClient() {
+  const { data, isLoading } = useProgress();
+
+  const exercises = data?.exercises ?? [];
+  const sessionsByExercise = data?.sessionsByExercise ?? {};
+  const bodyWeightHistory = data?.bodyWeightHistory ?? [];
+
   const {
     selectedExerciseId,
     setSelectedExerciseId,
@@ -16,6 +22,25 @@ export function ProgressClient({ exercises, sessionsByExercise, bodyWeightHistor
     chartData,
     bodyWeightChartData,
   } = useProgressFilters(exercises, sessionsByExercise, bodyWeightHistory);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="skeleton flex-1 h-10 rounded-full" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <div className="skeleton h-10 w-full rounded-lg" />
+            <div className="skeleton h-72 w-full rounded-xl" />
+          </div>
+          <div className="skeleton h-[340px] w-full rounded-xl" />
+        </div>
+      </div>
+    );
+  }
 
   if (exercises.length === 0) {
     return (
