@@ -31,7 +31,6 @@ export function Navbar() {
     settingsOpen,
     setSettingsOpen,
     handleSignOut,
-    clearProfile,
   } = useNavbar();
 
   const avatarRef = useRef<HTMLButtonElement>(null);
@@ -110,10 +109,7 @@ export function Navbar() {
           {showNavLinks && (
             <SettingsDrawer
               open={settingsOpen}
-              onClose={() => {
-                setSettingsOpen(false);
-                clearProfile();
-              }}
+              onClose={() => setSettingsOpen(false)}
               user={{
                 email: user.email ?? "",
                 name: profile?.name ?? displayName ?? null,

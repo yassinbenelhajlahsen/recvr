@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { mutate as globalMutate } from "swr";
 import { GOALS } from "@/components/ui/GoalSelector";
 import type { UnitSystem, UserProfile, Gender } from "@/types/user";
 import {
@@ -110,6 +111,7 @@ export function useFitnessForm(
     });
     setSaving(false);
     if (!res.ok) return;
+    globalMutate("/api/user/profile");
     onClose();
     router.refresh();
   }

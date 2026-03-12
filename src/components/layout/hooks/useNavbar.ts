@@ -3,25 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import useSWR from "swr";
 import type { User } from "@supabase/supabase-js";
-
-interface NavbarProfile {
-  name?: string | null;
-  height_inches?: number | null;
-  weight_lbs?: number | null;
-  fitness_goals?: string[];
-  gender?: "male" | "female" | null;
-}
+import type { UserProfile } from "@/types/user";
 
 interface UseNavbarReturn {
   user: User | null;
-  profile: NavbarProfile | null;
+  profile: UserProfile | null;
   menuOpen: boolean;
   setMenuOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   settingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
   handleSignOut: () => Promise<void>;
-  clearProfile: () => void;
 }
 
 export function useNavbar(): UseNavbarReturn {
@@ -31,7 +24,6 @@ export function useNavbar(): UseNavbarReturn {
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [profile, setProfile] = useState<NavbarProfile | null>(null);
 
   // Auth state: initial load + subscription
   useEffect(() => {
@@ -45,14 +37,11 @@ export function useNavbar(): UseNavbarReturn {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch profile when settings drawer opens
-  useEffect(() => {
-    if (settingsOpen) {
-      fetch("/api/user/profile")
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => { if (data) setProfile(data); });
-    }
-  }, [settingsOpen]);
+  // Profile: SWR caches it so settings drawer opens instantly on subsequent opens
+  const { data: profile } = useSWR<UserProfile>(
+    user ? "/api/user/profile" : null,
+    { dedupingInterval: 30_000 }
+  );
 
   // Close dropdown on route change
   const [menuPath, setMenuPath] = useState(pathname);
@@ -68,18 +57,13 @@ export function useNavbar(): UseNavbarReturn {
     router.refresh();
   }
 
-  function clearProfile() {
-    setProfile(null);
-  }
-
   return {
     user,
-    profile,
+    profile: profile ?? null,
     menuOpen,
     setMenuOpen,
     settingsOpen,
     setSettingsOpen,
     handleSignOut,
-    clearProfile,
   };
 }

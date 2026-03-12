@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { mutate as globalMutate } from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { fetchWithAuth } from "@/lib/fetch";
 import type { UserProfile } from "@/types/user";
@@ -39,6 +40,7 @@ export function useProfileSave(
     ]);
     setSaving(false);
     if (!res.ok) return;
+    globalMutate("/api/user/profile");
     onClose();
     router.refresh();
   }
