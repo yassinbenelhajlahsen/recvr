@@ -15,7 +15,7 @@ export function DashboardClient({ displayName, workouts, hasFilters, recovery, o
   useEffect(() => {
     if (openDraftId) {
       openDrawer(openDraftId);
-      router.replace("/", { scroll: false });
+      router.replace("/dashboard", { scroll: false });
     }
   }, [openDraftId, openDrawer, router]);
 

@@ -53,7 +53,7 @@ export function useNavbar(): UseNavbarReturn {
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/auth/signin");
+    router.push("/");
     router.refresh();
   }
 

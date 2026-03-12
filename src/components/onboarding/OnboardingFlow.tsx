@@ -90,7 +90,7 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
       }),
       supabase.auth.updateUser({ data: { full_name: trimmedName } }),
     ]);
-    router.push("/");
+    router.push("/dashboard");
     router.refresh();
   }
 
@@ -112,7 +112,7 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
             >
               <div className="text-center space-y-1 mb-8">
                 <h1 className="font-display text-4xl italic text-primary">
-                  Welcome to Recovr
+                  Welcome to Recvr
                 </h1>
                 <p className="text-sm text-muted">
                   Let&apos;s set up your profile
@@ -166,7 +166,11 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
               </div>
 
               <div className="space-y-4">
-                <GenderSelector gender={gender} onChange={setGender} buttonPadding="py-5" />
+                <GenderSelector
+                  gender={gender}
+                  onChange={setGender}
+                  buttonPadding="py-5"
+                />
 
                 <motion.button
                   type="button"

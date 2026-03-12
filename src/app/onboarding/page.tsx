@@ -15,7 +15,7 @@ export default async function OnboardingPage() {
     select: { onboarding_completed: true, name: true },
   });
 
-  if (dbUser?.onboarding_completed) redirect("/");
+  if (dbUser?.onboarding_completed) redirect("/dashboard");
 
   return <OnboardingFlow initialName={dbUser?.name ?? ""} />;
 }

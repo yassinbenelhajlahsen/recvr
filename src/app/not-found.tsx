@@ -16,7 +16,7 @@ export default function NotFound() {
       </p>
 
       <Link
-        href="/"
+        href="/dashboard"
         className="mt-8 px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-[var(--c-accent-hover)] transition-colors"
       >
         Back to dashboard

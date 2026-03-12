@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useAppStore } from "@/store/appStore";
 import { UserMenu } from "./UserMenu";
+import { GuestMenu } from "./GuestMenu";
 import { SettingsDrawer } from "@/components/settings/SettingsDrawer";
 import { useNavbar } from "./hooks/useNavbar";
+import { UserIcon } from "@/components/ui/icons";
 
 function getInitials(name?: string | null, email?: string): string {
   if (name) {
@@ -34,6 +36,8 @@ export function Navbar() {
   } = useNavbar();
 
   const avatarRef = useRef<HTMLButtonElement>(null);
+  const guestRef = useRef<HTMLButtonElement>(null);
+  const [guestMenuOpen, setGuestMenuOpen] = useState(false);
 
   const displayName = user?.user_metadata?.full_name as string | undefined;
   const initials = getInitials(displayName, user?.email);
@@ -44,20 +48,30 @@ export function Navbar() {
         <div className="px-4 sm:px-8 h-16 flex items-center justify-between relative">
           {isOnboarding ? (
             <span className="font-display text-xl text-primary tracking-tight">
-              Recovr
+              Recvr
             </span>
           ) : (
             <Link
-              href={user ? "/" : "/auth/signin"}
+              href={user ? "/dashboard" : "/"}
               className="font-display text-xl text-primary tracking-tight"
             >
-              Recovr
+              Recvr
             </Link>
           )}
 
           <div className="absolute right-2 flex items-center gap-1">
             {user && showNavLinks && (
               <>
+                <Link
+                  href="/dashboard"
+                  className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${
+                    pathname === "/dashboard"
+                      ? "text-accent"
+                      : "text-muted hover:text-primary hover:bg-surface"
+                  }`}
+                >
+                  Dashboard
+                </Link>
                 <Link
                   href="/progress"
                   className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${
@@ -91,9 +105,28 @@ export function Navbar() {
                 {initials}
               </button>
             )}
+            {!user && !isAuthPage && (
+              <button
+                ref={guestRef}
+                onClick={() => setGuestMenuOpen((v) => !v)}
+                aria-label="Open menu"
+                aria-expanded={guestMenuOpen}
+                className="w-9 h-9 rounded-full bg-surface border border-border-subtle text-muted hover:text-secondary hover:border-border transition-colors flex items-center justify-center ml-1 shrink-0"
+              >
+                <UserIcon />
+              </button>
+            )}
           </div>
         </div>
       </nav>
+
+      {!user && !isAuthPage && (
+        <GuestMenu
+          open={guestMenuOpen}
+          onClose={() => setGuestMenuOpen(false)}
+          anchorRef={guestRef}
+        />
+      )}
 
       {user && (
         <>
