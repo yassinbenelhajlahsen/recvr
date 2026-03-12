@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import useSWR from "swr";
 import { Drawer } from "@/components/ui/Drawer";
 import { SuggestionPanel } from "./SuggestionPanel";
 import { SparklesIcon } from "@/components/ui/icons";
-import type { MuscleRecovery } from "@/types/recovery";
+import { useRecovery } from "@/lib/hooks";
 
-interface SuggestionTriggerProps {
-  recovery: MuscleRecovery[];
-}
-
-export function SuggestionTrigger({ recovery }: SuggestionTriggerProps) {
+export function SuggestionTrigger() {
   const [open, setOpen] = useState(false);
+  const { data: recovery = [] } = useRecovery();
+  // Prefetch cooldown + cached suggestion on page mount so the drawer
+  // opens with data already in the SWR cache (no visible delay).
+  useSWR("/api/suggest/cooldown", { revalidateOnFocus: false, dedupingInterval: 60_000 });
 
   return (
     <>

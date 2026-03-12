@@ -6,13 +6,15 @@ import type { Gender } from "@/types/user";
 import { BodyMapFront } from "./BodyMapFront";
 import { BodyMapBack } from "./BodyMapBack";
 import { useRecoverySelection } from "./hooks/useRecoverySelection";
+import { useRecovery } from "@/lib/hooks";
 
 type Props = {
   recovery: MuscleRecovery[];
   gender?: Gender;
 };
 
-export function RecoveryPanel({ recovery, gender }: Props) {
+export function RecoveryPanel({ recovery: serverRecovery, gender }: Props) {
+  const { data: recovery = serverRecovery } = useRecovery(serverRecovery);
   const { muscleMap, fatigued, partial, recovered } = useRecoverySelection(recovery);
 
   return (

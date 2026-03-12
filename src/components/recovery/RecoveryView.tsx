@@ -1,20 +1,26 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import type { MuscleRecovery } from "@/types/recovery";
-import type { Gender } from "@/types/user";
+import useSWR from "swr";
 import { BodyMapFront } from "./BodyMapFront";
 import { BodyMapBack } from "./BodyMapBack";
 import { MuscleDetailPanel } from "./MuscleDetailPanel";
 import { useRecoverySelection } from "./hooks/useRecoverySelection";
 import { WorkoutDetailDrawer } from "@/components/workout/WorkoutDetailDrawer";
+import { useRecovery } from "@/lib/hooks";
+import { normalizeGender } from "@/lib/utils";
+import type { UserProfile } from "@/types/user";
 
-type Props = {
-  recovery: MuscleRecovery[];
-  gender?: Gender;
-};
-
-export function RecoveryView({ recovery, gender }: Props) {
+export function RecoveryView() {
+  const { data: recovery = [] } = useRecovery();
+  // Reuse the same SWR key as useNavbar — already warm from layout mount
+  const { data: profile } = useSWR<UserProfile>("/api/user/profile", {
+    dedupingInterval: 30_000,
+  });
+  // Wait until profile has loaded before rendering body maps to prevent
+  // a flash from male (default) → actual gender on page load.
+  const profileReady = profile !== undefined;
+  const gender = normalizeGender(profile?.gender);
   const { selectedMuscle, selectedData, muscleMap, handleSelect, fatigued, partial, recovered } =
     useRecoverySelection(recovery);
 
@@ -34,21 +40,29 @@ export function RecoveryView({ recovery, gender }: Props) {
           <div className="flex-1 bg-surface border border-border-subtle rounded-xl p-4">
             <p className="text-xs uppercase tracking-widest text-muted text-center mb-3">Front</p>
             <div className="mx-auto" style={{ maxWidth: 200 }}>
-              <BodyMapFront
-                muscles={muscleMap}
-                onSelectMuscle={handleSelect}
-                gender={gender}
-              />
+              {profileReady ? (
+                <BodyMapFront
+                  muscles={muscleMap}
+                  onSelectMuscle={handleSelect}
+                  gender={gender}
+                />
+              ) : (
+                <div style={{ aspectRatio: "160 / 340" }} />
+              )}
             </div>
           </div>
           <div className="flex-1 bg-surface border border-border-subtle rounded-xl p-4">
             <p className="text-xs uppercase tracking-widest text-muted text-center mb-3">Back</p>
             <div className="mx-auto" style={{ maxWidth: 200 }}>
-              <BodyMapBack
-                muscles={muscleMap}
-                onSelectMuscle={handleSelect}
-                gender={gender}
-              />
+              {profileReady ? (
+                <BodyMapBack
+                  muscles={muscleMap}
+                  onSelectMuscle={handleSelect}
+                  gender={gender}
+                />
+              ) : (
+                <div style={{ aspectRatio: "160 / 340" }} />
+              )}
             </div>
           </div>
         </div>

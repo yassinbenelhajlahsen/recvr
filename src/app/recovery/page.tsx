@@ -1,25 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { getRecovery } from "@/lib/recovery";
-import { prisma } from "@/lib/prisma";
-import { normalizeGender } from "@/lib/utils";
 import { RecoveryView } from "@/components/recovery/RecoveryView";
 import { SuggestionTrigger } from "@/components/recovery/SuggestionTrigger";
 
-export default async function RecoveryPage() {
-  const supabase = await createClient();
-  const { data: claims, error } = await supabase.auth.getClaims();
-
-  if (error || !claims) redirect("/auth/signin");
-
-  const userId = claims.claims.sub as string;
-  const [recovery, dbUser] = await Promise.all([
-    getRecovery(userId),
-    prisma.user.findUnique({ where: { id: userId }, select: { gender: true } }),
-  ]);
-
-  const gender = normalizeGender(dbUser?.gender);
-
+// Synchronous — no async/await so loading.tsx never triggers.
+// Auth is handled by middleware (src/proxy.ts).
+// Recovery + gender are fetched client-side via SWR.
+export default function RecoveryPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -31,9 +16,9 @@ export default async function RecoveryPage() {
             Your muscle recovery status based on recent workout history.
           </p>
         </div>
-        <SuggestionTrigger recovery={recovery} />
+        <SuggestionTrigger />
       </div>
-      <RecoveryView recovery={recovery} gender={gender} />
+      <RecoveryView />
     </div>
   );
 }
