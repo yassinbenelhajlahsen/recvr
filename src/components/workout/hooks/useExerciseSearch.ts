@@ -1,54 +1,32 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
+import useSWR, { mutate as globalMutate } from "swr";
+import { useDebouncedValue } from "@/lib/hooks";
 import type { Exercise } from "@/types/workout";
 
 export function useExerciseSearch() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Exercise[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
   const [showCustomForm, setShowCustomForm] = useState(false);
 
   const searchPanelRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchCache = useRef<Map<string, Exercise[]>>(new Map());
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchExercises = useCallback(async (q: string) => {
-    const cached = searchCache.current.get(q);
-    if (cached) {
-      setSearchResults(cached);
-      return;
-    }
-    setSearchLoading(true);
-    try {
-      const res = await fetch(`/api/exercises?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      searchCache.current.set(q, data);
-      setSearchResults(data);
-    } catch {
-      /* ignore */
-    } finally {
-      setSearchLoading(false);
-    }
-  }, []);
+  const debouncedQuery = useDebouncedValue(searchQuery, 300);
+  const key = showSearch
+    ? `/api/exercises?q=${encodeURIComponent(debouncedQuery)}`
+    : null;
 
-  // Debounced search
-  useEffect(() => {
-    if (!showSearch) return;
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => fetchExercises(searchQuery), 300);
-    return () => {
-      if (searchTimer.current) clearTimeout(searchTimer.current);
-    };
-  }, [searchQuery, showSearch, fetchExercises]);
+  const { data, isLoading: searchLoading } = useSWR<Exercise[]>(key, {
+    keepPreviousData: true,
+    dedupingInterval: 30_000,
+  });
+  const searchResults = data ?? [];
 
-  // Open search: load results + focus
+  // Focus input when search panel opens
   useEffect(() => {
     if (showSearch) {
-      fetchExercises(searchQuery);
       setTimeout(() => searchInputRef.current?.focus(), 50);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSearch]);
 
   // Close on outside click
@@ -76,7 +54,11 @@ export function useExerciseSearch() {
   }
 
   function clearCache() {
-    searchCache.current.clear();
+    globalMutate(
+      (k) => typeof k === "string" && k.startsWith("/api/exercises"),
+      undefined,
+      { revalidate: true }
+    );
   }
 
   return {
@@ -91,7 +73,6 @@ export function useExerciseSearch() {
     setShowCustomForm,
     openSearch,
     closeSearch,
-    fetchExercises,
     clearCache,
   };
 }

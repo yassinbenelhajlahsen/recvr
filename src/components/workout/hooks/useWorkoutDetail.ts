@@ -1,35 +1,29 @@
-import { useState, useCallback, useEffect } from "react";
+import useSWR from "swr";
 import type { WorkoutDetail } from "@/types/workout";
 
 export function useWorkoutDetail(
   isDrawerOpen: boolean,
   selectedWorkoutId: string | null
 ) {
-  const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [trackedId, setTrackedId] = useState<string | null>(null);
+  const key =
+    isDrawerOpen && selectedWorkoutId
+      ? `/api/workouts/${selectedWorkoutId}`
+      : null;
 
-  if (isDrawerOpen && selectedWorkoutId && selectedWorkoutId !== trackedId) {
-    setTrackedId(selectedWorkoutId);
-    setWorkout(null);
-    setLoading(true);
-  } else if (!isDrawerOpen && trackedId !== null) {
-    setTrackedId(null);
-    setWorkout(null);
+  const { data, isLoading, isValidating, mutate } = useSWR<WorkoutDetail>(
+    key,
+    { dedupingInterval: 10_000 }
+  );
+
+  function setWorkout(w: WorkoutDetail | null) {
+    mutate(w ?? undefined, { revalidate: false });
   }
 
-  const fetchWorkout = useCallback(async (id: string) => {
-    try {
-      const r = await fetch(`/api/workouts/${id}`);
-      if (r.ok) setWorkout(await r.json());
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (loading && selectedWorkoutId) fetchWorkout(selectedWorkoutId);
-  }, [loading, selectedWorkoutId, fetchWorkout]);
-
-  return { workout, setWorkout, loading };
+  return {
+    workout: data ?? null,
+    setWorkout,
+    loading: isLoading,
+    isValidating,
+    mutate,
+  };
 }
