@@ -155,6 +155,88 @@ function ConstellationIllustration() {
   );
 }
 
+function VoiceInputIllustration() {
+  // Simulated waveform bars
+  const bars = [
+    { h: 18, o: 0.3 }, { h: 34, o: 0.5 }, { h: 52, o: 0.7 }, { h: 72, o: 0.85 },
+    { h: 90, o: 1 }, { h: 78, o: 0.9 }, { h: 56, o: 0.7 }, { h: 40, o: 0.55 },
+    { h: 62, o: 0.75 }, { h: 84, o: 0.9 }, { h: 68, o: 0.8 }, { h: 44, o: 0.6 },
+    { h: 28, o: 0.4 }, { h: 50, o: 0.65 }, { h: 36, o: 0.5 }, { h: 20, o: 0.35 },
+  ];
+  const barWidth = 8;
+  const gap = 10;
+  const totalWidth = bars.length * (barWidth + gap) - gap;
+  const startX = (300 - totalWidth) / 2;
+
+  return (
+    <div className="relative flex items-center justify-center py-8">
+      <div className="accent-glow absolute inset-0 rounded-2xl" />
+      <svg
+        viewBox="0 0 300 220"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full max-w-xs h-auto relative"
+        aria-hidden="true"
+      >
+        {/* Mic icon */}
+        <g transform="translate(134, 24)">
+          <rect
+            x="6" y="0" width="20" height="34" rx="10"
+            stroke="var(--c-accent)" strokeWidth="2" fill="none" opacity="0.7"
+          />
+          <path
+            d="M4 28 a12 12 0 0 0 24 0"
+            stroke="var(--c-accent)" strokeWidth="2" fill="none" opacity="0.5"
+            strokeLinecap="round"
+          />
+          <line
+            x1="16" y1="40" x2="16" y2="48"
+            stroke="var(--c-accent)" strokeWidth="2" opacity="0.5"
+            strokeLinecap="round"
+          />
+          <line
+            x1="10" y1="48" x2="22" y2="48"
+            stroke="var(--c-accent)" strokeWidth="2" opacity="0.4"
+            strokeLinecap="round"
+          />
+        </g>
+        {/* Waveform bars */}
+        {bars.map((bar, i) => {
+          const x = startX + i * (barWidth + gap);
+          const y = 140 - bar.h / 2;
+          return (
+            <rect
+              key={i}
+              x={x}
+              y={y}
+              width={barWidth}
+              height={bar.h}
+              rx={barWidth / 2}
+              style={{ fill: "var(--c-accent)" }}
+              opacity={bar.o * 0.6}
+            />
+          );
+        })}
+        {/* Text bubble hint */}
+        <rect
+          x="60" y="182" width="180" height="26" rx="6"
+          stroke="var(--c-border-subtle)" strokeWidth="1" fill="none" opacity="0.5"
+        />
+        <text
+          x="150" y="199"
+          textAnchor="middle"
+          style={{ fill: "var(--c-muted)" }}
+          fontSize="10"
+          fontFamily="var(--font-sans)"
+          opacity="0.6"
+        >
+          &quot;Bench press 3 sets of 10...&quot;
+        </text>
+      </svg>
+    </div>
+  );
+}
+
 function ProgressCurveIllustration() {
   const pts = [
     { x: 28, y: 180 },
@@ -232,6 +314,108 @@ function ProgressCurveIllustration() {
   );
 }
 
+function OnboardingIllustration() {
+  const cards = [
+    { x: 58, y: 42, label: "Goals", w: 64 },
+    { x: 192, y: 42, label: "Gender", w: 60 },
+    { x: 40, y: 168, label: "Height", w: 56 },
+    { x: 212, y: 168, label: "Weight", w: 60 },
+  ];
+  const cx = 150;
+  const cy = 110;
+
+  return (
+    <div className="relative flex items-center justify-center py-8">
+      <div className="accent-glow absolute inset-0 rounded-2xl" />
+      <svg
+        viewBox="0 0 300 230"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full max-w-xs h-auto relative"
+        aria-hidden="true"
+      >
+        {/* Connection lines from center to cards */}
+        {cards.map((c, i) => (
+          <line
+            key={i}
+            x1={cx}
+            y1={cy}
+            x2={c.x + c.w / 2}
+            y2={c.y + 14}
+            stroke="var(--c-accent)"
+            strokeWidth="1"
+            opacity="0.2"
+            strokeDasharray="4 3"
+          />
+        ))}
+        {/* Outer pulse rings */}
+        <circle cx={cx} cy={cy} r="52" stroke="var(--c-accent)" strokeWidth="0.8" opacity="0.08" />
+        <circle cx={cx} cy={cy} r="38" stroke="var(--c-accent)" strokeWidth="0.8" opacity="0.12" />
+        {/* Central user silhouette */}
+        <circle cx={cx} cy={cy} r="24" style={{ fill: "var(--c-accent)" }} opacity="0.12" />
+        <circle cx={cx} cy={cy - 6} r="7" style={{ fill: "var(--c-accent)" }} opacity="0.5" />
+        <path
+          d={`M${cx - 11},${cy + 12} a11,9 0 0,1 22,0`}
+          style={{ fill: "var(--c-accent)" }}
+          opacity="0.45"
+        />
+        {/* Orbiting cards */}
+        {cards.map((c, i) => (
+          <g key={i}>
+            <rect
+              x={c.x}
+              y={c.y}
+              width={c.w}
+              height={28}
+              rx="6"
+              stroke="var(--c-accent)"
+              strokeWidth="1.2"
+              opacity="0.35"
+              style={{ fill: "var(--c-bg)" }}
+            />
+            <rect
+              x={c.x}
+              y={c.y}
+              width={c.w}
+              height={28}
+              rx="6"
+              style={{ fill: "var(--c-accent)" }}
+              opacity="0.06"
+            />
+            <text
+              x={c.x + c.w / 2}
+              y={c.y + 18}
+              textAnchor="middle"
+              style={{ fill: "var(--c-accent)" }}
+              fontSize="10"
+              fontFamily="var(--font-sans)"
+              opacity="0.6"
+              fontWeight="500"
+            >
+              {c.label}
+            </text>
+          </g>
+        ))}
+        {/* Small dots on connection lines */}
+        {cards.map((c, i) => {
+          const dx = c.x + c.w / 2 - cx;
+          const dy = c.y + 14 - cy;
+          return (
+            <circle
+              key={i}
+              cx={cx + dx * 0.45}
+              cy={cy + dy * 0.45}
+              r="2.5"
+              style={{ fill: "var(--c-accent)" }}
+              opacity="0.3"
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
 const features = [
   {
     number: "01",
@@ -249,10 +433,24 @@ const features = [
   },
   {
     number: "03",
+    title: "Voice Logging",
+    description:
+      "Skip the typing. Just say your workout out loud and Recvr transcribes, parses, and populates your entire session. Review the exercises, edit if needed, and save.",
+    visual: <VoiceInputIllustration />,
+  },
+  {
+    number: "04",
     title: "Progress Analytics",
     description:
       "Track strength gains and body weight trends with clean visual analytics. See your estimated 1RMs climb over time and correlate progress with your training patterns.",
     visual: <ProgressCurveIllustration />,
+  },
+  {
+    number: "05",
+    title: "Built Around You",
+    description:
+      "A quick setup captures your goals, body metrics, and training preferences. Every feature — from AI suggestions to recovery maps — adapts to your profile.",
+    visual: <OnboardingIllustration />,
   },
 ];
 
