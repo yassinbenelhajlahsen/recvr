@@ -2,30 +2,37 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { normalizeGender } from "@/lib/utils";
+import { logger, withLogging } from "@/lib/logger";
 
-export async function GET() {
+export const GET = withLogging(async function GET() {
   const supabase = await createClient();
   const { data: claims, error } = await supabase.auth.getClaims();
   if (error || !claims) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const userId = claims.claims.sub as string;
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      name: true,
-      height_inches: true,
-      weight_lbs: true,
-      fitness_goals: true,
-      gender: true,
-      onboarding_completed: true,
-    },
-  });
 
-  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-  return NextResponse.json(user);
-}
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        name: true,
+        height_inches: true,
+        weight_lbs: true,
+        fitness_goals: true,
+        gender: true,
+        onboarding_completed: true,
+      },
+    });
 
-export async function PUT(request: Request) {
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    return NextResponse.json(user);
+  } catch (err) {
+    logger.error({ err }, "GET /api/user/profile failed");
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+  }
+});
+
+export const PUT = withLogging(async function PUT(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -33,7 +40,8 @@ export async function PUT(request: Request) {
 
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
   const data: Record<string, unknown> = {};
 
@@ -66,18 +74,23 @@ export async function PUT(request: Request) {
     data.onboarding_completed = body.onboarding_completed === true;
   }
 
-  const updated = await prisma.user.update({
-    where: { id: user.id },
-    data,
-    select: {
-      name: true,
-      height_inches: true,
-      weight_lbs: true,
-      fitness_goals: true,
-      gender: true,
-      onboarding_completed: true,
-    },
-  });
+  try {
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data,
+      select: {
+        name: true,
+        height_inches: true,
+        weight_lbs: true,
+        fitness_goals: true,
+        gender: true,
+        onboarding_completed: true,
+      },
+    });
 
-  return NextResponse.json(updated);
-}
+    return NextResponse.json(updated);
+  } catch (err) {
+    logger.error({ err }, "PUT /api/user/profile failed");
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+  }
+});
