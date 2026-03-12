@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getRecovery } from "@/lib/recovery";
 import { prisma } from "@/lib/prisma";
 import { openai } from "@/lib/openai";
-import { getCachedSuggestion, setCachedSuggestion, getSuggestionCooldown, getSuggestionDraftId } from "@/lib/cache";
+import { setCachedSuggestion, setCachedSuggestionId } from "@/lib/cache";
+import { getSuggestionState, persistSuggestion } from "@/lib/suggestion";
 import type { WorkoutSuggestion, SuggestedExercise, SuggestionStreamEvent } from "@/types/suggestion";
 import { logger, withLogging } from "@/lib/logger";
 import type OpenAI from "openai";
@@ -121,6 +122,7 @@ function extractExercises(buffer: string, alreadyEmitted: number): SuggestedExer
 function createSuggestionStream(
   openaiStream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
   userId: string,
+  presets: string[],
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
 
@@ -178,7 +180,9 @@ function createSuggestionStream(
         }
 
         await setCachedSuggestion(userId, suggestion);
-        emit(controller, { type: "done" });
+        const suggestionId = await persistSuggestion(userId, suggestion, presets);
+        if (suggestionId) await setCachedSuggestionId(userId, suggestionId);
+        emit(controller, { type: "done", suggestionId: suggestionId ?? undefined });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Stream failed";
         emit(controller, { type: "error", message: msg });
@@ -203,13 +207,16 @@ export const POST = withLogging(async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Return cached suggestion if within 1-hour cooldown (instant JSON, no streaming)
-  const cached = await getCachedSuggestion(user.id);
-  if (cached) {
-    const [cooldown, draftId] = await Promise.all([
-      getSuggestionCooldown(user.id),
-      getSuggestionDraftId(user.id),
-    ]);
-    return NextResponse.json({ ...cached, _cooldown: cooldown, _cached: true, ...(draftId ? { _draftId: draftId } : {}) });
+  // DB is source of truth; Redis is a fast cache. getSuggestionState checks Redis first, falls back to DB.
+  const state = await getSuggestionState(user.id);
+  if (state.cooldown > 0 && state.suggestion) {
+    return NextResponse.json({
+      ...state.suggestion,
+      _cooldown: state.cooldown,
+      _cached: true,
+      ...(state.draftId ? { _draftId: state.draftId } : {}),
+      ...(state.suggestionId ? { _suggestionId: state.suggestionId } : {}),
+    });
   }
 
   let userProfile: { fitness_goals: string[]; weight_lbs: number | null; gender: string | null } | null;
@@ -280,7 +287,7 @@ export const POST = withLogging(async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
-  const stream = createSuggestionStream(openaiStream, user.id);
+  const stream = createSuggestionStream(openaiStream, user.id, selectedPresets);
 
   return new Response(stream, {
     headers: {

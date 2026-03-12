@@ -21,5 +21,18 @@ export type SuggestionStreamEvent =
   | { type: "title"; value: string }
   | { type: "rationale"; value: string }
   | { type: "exercise"; value: SuggestedExercise }
-  | { type: "done" }
+  | { type: "done"; suggestionId?: string }
   | { type: "error"; message: string };
+
+export type SuggestionHistoryItem = {
+  id: string;
+  title: string;
+  presets: string[];
+  draft_id: string | null;
+  created_at: string; // ISO
+};
+
+export type SuggestionDetail = SuggestionHistoryItem & {
+  rationale: string;
+  exercises: SuggestedExercise[];
+};

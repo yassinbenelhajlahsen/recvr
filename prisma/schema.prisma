@@ -18,8 +18,9 @@ model User {
   onboarding_completed Boolean  @default(false)
   created_at           DateTime @default(now())
 
-  workouts  Workout[]
-  exercises Exercise[]
+  workouts    Workout[]
+  exercises   Exercise[]
+  suggestions Suggestion[]
 }
 
 model Exercise {
@@ -47,6 +48,7 @@ model Workout {
 
   user              User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
   workout_exercises WorkoutExercise[]
+  suggestion        Suggestion?
 
   @@index([user_id])
   @@index([date])
@@ -76,4 +78,21 @@ model Set {
   workout_exercise WorkoutExercise @relation(fields: [workout_exercise_id], references: [id], onDelete: Cascade)
 
   @@index([workout_exercise_id])
+}
+
+model Suggestion {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  title      String
+  rationale  String
+  exercises  Json
+  presets    String[]
+  draft_id   String?  @unique @db.Uuid
+  created_at DateTime @default(now())
+
+  user  User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  draft Workout? @relation(fields: [draft_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([user_id, created_at(sort: Desc)])
 }

@@ -108,6 +108,47 @@ export async function invalidateSuggestionDraftId(userId: string): Promise<void>
   }
 }
 
+/** Stores the DB Suggestion row ID alongside the cached suggestion. TTL synced to suggestion key. */
+export async function setCachedSuggestionId(userId: string, suggestionId: string): Promise<void> {
+  if (!redis) return;
+  try {
+    const ttl = await redis.ttl(`suggestion:${userId}`);
+    const ex = ttl > 0 ? ttl : SUGGESTION_TTL;
+    await redis.set(`suggestion-id:${userId}`, suggestionId, { ex });
+  } catch {
+    // ignore
+  }
+}
+
+export async function getCachedSuggestionId(userId: string): Promise<string | null> {
+  if (!redis) return null;
+  try {
+    return await redis.get<string>(`suggestion-id:${userId}`);
+  } catch {
+    return null;
+  }
+}
+
+/** Dev-only: set a short-lived bypass so the next getSuggestionState ignores the cooldown. */
+export async function setCooldownBypass(userId: string): Promise<void> {
+  if (!redis) return;
+  try {
+    await redis.set(`suggestion-bypass:${userId}`, "1", { ex: 30 });
+  } catch {
+    // ignore
+  }
+}
+
+export async function getCooldownBypass(userId: string): Promise<boolean> {
+  if (!redis) return false;
+  try {
+    const val = await redis.get(`suggestion-bypass:${userId}`);
+    return val === "1";
+  } catch {
+    return false;
+  }
+}
+
 // ---- Exercise library ----
 
 export async function getCachedExercises(
