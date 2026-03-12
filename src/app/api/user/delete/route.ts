@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { logger, withLogging } from "@/lib/logger";
 
-export async function DELETE() {
+export const DELETE = withLogging(async function DELETE() {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -24,8 +25,8 @@ export async function DELETE() {
   );
   const { error } = await adminClient.auth.admin.deleteUser(user.id);
   if (error) {
-    console.error("Failed to delete Supabase auth user:", error.message);
+    logger.error({ err: error }, "Failed to delete Supabase auth user");
   }
 
   return NextResponse.json({ ok: true });
-}
+});

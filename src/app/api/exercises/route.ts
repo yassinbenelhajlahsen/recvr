@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { getCachedExercises, setCachedExercises, invalidateExercises } from "@/lib/cache";
+import { logger, withLogging } from "@/lib/logger";
 import type { Exercise as ExerciseRow } from "@/types/workout";
 
-export async function GET(request: Request) {
+export const GET = withLogging(async function GET(request: Request) {
   const supabase = await createClient();
   const { data: claims, error } = await supabase.auth.getClaims();
   if (error || !claims) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -21,27 +23,32 @@ export async function GET(request: Request) {
 
   let exercises: ExerciseRow[];
 
-  if (q) {
-    // Use raw SQL so we can do partial ILIKE matching on both name and array elements.
-    // EXISTS + unnest lets us check if any muscle group contains the search term.
-    exercises = await prisma.$queryRaw<ExerciseRow[]>`
-      SELECT id, name, muscle_groups, equipment, user_id
-      FROM "Exercise"
-      WHERE (user_id IS NULL OR user_id = ${userId}::uuid)
-        AND (
-          name ILIKE ${"%" + q + "%"}
-          OR EXISTS (
-            SELECT 1 FROM unnest(muscle_groups) AS mg
-            WHERE mg ILIKE ${"%" + q + "%"}
+  try {
+    if (q) {
+      // Use raw SQL so we can do partial ILIKE matching on both name and array elements.
+      // EXISTS + unnest lets us check if any muscle group contains the search term.
+      exercises = await prisma.$queryRaw<ExerciseRow[]>`
+        SELECT id, name, muscle_groups, equipment, user_id
+        FROM "Exercise"
+        WHERE (user_id IS NULL OR user_id = ${userId}::uuid)
+          AND (
+            name ILIKE ${"%" + q + "%"}
+            OR EXISTS (
+              SELECT 1 FROM unnest(muscle_groups) AS mg
+              WHERE mg ILIKE ${"%" + q + "%"}
+            )
           )
-        )
-      ORDER BY user_id ASC NULLS FIRST, name ASC
-    `;
-  } else {
-    exercises = await prisma.exercise.findMany({
-      where: { OR: [{ user_id: null }, { user_id: userId }] },
-      orderBy: [{ user_id: "asc" }, { name: "asc" }],
-    });
+        ORDER BY user_id ASC NULLS FIRST, name ASC
+      `;
+    } else {
+      exercises = await prisma.exercise.findMany({
+        where: { OR: [{ user_id: null }, { user_id: userId }] },
+        orderBy: [{ user_id: "asc" }, { name: "asc" }],
+      });
+    }
+  } catch (err) {
+    logger.error({ err }, "GET /api/exercises failed");
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 
   if (!q) {
@@ -49,9 +56,9 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json(exercises);
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withLogging(async function POST(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -69,15 +76,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const exercise = await prisma.exercise.create({
-    data: {
-      name: name.trim(),
-      muscle_groups,
-      equipment: equipment?.trim() || null,
-      user_id: user.id,
-    },
-  });
+  try {
+    const exercise = await prisma.exercise.create({
+      data: {
+        name: name.trim(),
+        muscle_groups,
+        equipment: equipment?.trim() || null,
+        user_id: user.id,
+      },
+    });
 
-  await invalidateExercises(user.id);
-  return NextResponse.json(exercise, { status: 201 });
-}
+    await invalidateExercises(user.id);
+    return NextResponse.json(exercise, { status: 201 });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return NextResponse.json({ error: "Exercise already exists" }, { status: 400 });
+    }
+    logger.error({ err }, "POST /api/exercises failed");
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+  }
+});
