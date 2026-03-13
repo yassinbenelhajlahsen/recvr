@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { mutate as globalMutate } from "swr";
+import { toast } from "sonner";
 import { DeleteWorkoutButton } from "@/components/workout/DeleteWorkoutButton";
 import { fetchWithAuth } from "@/lib/fetch";
 import type { WorkoutDetail, WorkoutPreview } from "@/types/workout";
@@ -38,9 +39,11 @@ export function WorkoutViewDetail({
         body: JSON.stringify({ is_draft: false }),
       });
       if (!res.ok) {
+        toast.error("Failed to save workout");
         setPublishError("Failed to save workout");
         return;
       }
+      toast.success("Workout saved");
       globalMutate(
         (k) => typeof k === "string" && k.startsWith("/api/workouts/"),
         undefined,
@@ -50,6 +53,7 @@ export function WorkoutViewDetail({
       globalMutate("/api/progress");
       onDelete(); // closes drawer and calls router.refresh() in WorkoutDetailDrawer
     } catch {
+      toast.error("Failed to save workout");
       setPublishError("Failed to save workout");
     } finally {
       setPublishing(false);

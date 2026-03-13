@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate as globalMutate } from "swr";
+import { toast } from "sonner";
 
 import { toLocalISODate } from "@/lib/utils";
 import { fetchWithAuth } from "@/lib/fetch";
-import type { ExerciseEntry, Exercise, WorkoutFormInitialData, WorkoutFormProps, SessionSummaryData } from "@/types/workout";
+import type { ExerciseEntry, Exercise, WorkoutFormInitialData, WorkoutFormProps, WorkoutSaveData } from "@/types/workout";
 
 interface UseWorkoutFormOptions {
   workoutId?: string;
@@ -69,6 +70,7 @@ export function useWorkoutForm({
       handleAddExercise(await res.json());
       clearCache(); // also invalidates SWR exercise keys via useExerciseSearch.clearCache()
     } catch {
+      toast.error("Failed to create exercise");
       setError("Failed to create custom exercise");
     } finally {
       setCustomLoading(false);
@@ -129,7 +131,7 @@ export function useWorkoutForm({
       globalMutate("/api/recovery");
       globalMutate("/api/progress");
       if (onSave) {
-        const saveData: SessionSummaryData = {
+        const saveData: WorkoutSaveData = {
           id,
           date,
           duration_minutes: duration ? Number(duration) : null,
@@ -152,7 +154,7 @@ export function useWorkoutForm({
         router.refresh();
       }
     } catch {
-      setError("Failed to save workout. Please try again.");
+      toast.error("Failed to save workout");
       setSaving(false);
     }
   }
@@ -189,9 +191,11 @@ export function useWorkoutForm({
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error();
+      toast.success("Draft saved");
       router.refresh();
       if (onDraftSave) onDraftSave();
     } catch {
+      toast.error("Failed to save draft");
       setError("Failed to save draft. Please try again.");
       setSavingDraft(false);
     }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate as globalMutate } from "swr";
+import { toast } from "sonner";
 import { fetchWithAuth } from "@/lib/fetch";
 
 export function DeleteWorkoutButton({
@@ -41,6 +42,7 @@ export function DeleteWorkoutButton({
       );
       globalMutate("/api/recovery");
       globalMutate("/api/progress");
+      toast.success("Workout deleted");
       if (onDelete) {
         onDelete();
       } else {
@@ -48,6 +50,7 @@ export function DeleteWorkoutButton({
         router.refresh();
       }
     } catch {
+      toast.error("Failed to delete workout");
       setLoading(false);
       setConfirming(false);
     }

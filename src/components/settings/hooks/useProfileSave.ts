@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { mutate as globalMutate } from "swr";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { fetchWithAuth } from "@/lib/fetch";
 import type { UserProfile } from "@/types/user";
@@ -40,7 +41,11 @@ export function useProfileSave(
       }),
     ]);
     setSaving(false);
-    if (!res.ok) return;
+    if (!res.ok) {
+      toast.error("Failed to update profile");
+      return;
+    }
+    toast.success("Profile updated");
     globalMutate("/api/user/profile");
     onClose();
     router.refresh();

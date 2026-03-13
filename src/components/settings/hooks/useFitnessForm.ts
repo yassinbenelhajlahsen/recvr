@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { mutate as globalMutate } from "swr";
+import { toast } from "sonner";
 import { GOALS } from "@/components/ui/GoalSelector";
 import type { UnitSystem, UserProfile, Gender } from "@/types/user";
 import {
@@ -112,7 +113,11 @@ export function useFitnessForm(
       }),
     });
     setSaving(false);
-    if (!res.ok) return;
+    if (!res.ok) {
+      toast.error("Failed to update profile");
+      return;
+    }
+    toast.success("Fitness profile updated");
     globalMutate("/api/user/profile");
     onClose();
     router.refresh();

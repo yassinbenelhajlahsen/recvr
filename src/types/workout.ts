@@ -69,19 +69,6 @@ export type WorkoutPreview = {
   isDraft?: boolean;
 };
 
-export type SessionSummaryData = {
-  id: string;
-  date: string;
-  duration_minutes: number | null;
-  body_weight?: number | null;
-  notes: string | null;
-  workout_exercises: {
-    id: string;
-    exercise: { id: string; name: string; muscle_groups: string[]; equipment: string | null };
-    sets: { id: string; set_number: number; reps: number; weight: number }[];
-  }[];
-};
-
 export type SetData = { id: string; set_number: number; reps: number; weight: number };
 
 export type ExerciseData = { id: string; name: string; muscle_groups: string[]; equipment: string | null };

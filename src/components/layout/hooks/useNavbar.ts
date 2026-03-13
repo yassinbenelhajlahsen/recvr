@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import useSWR from "swr";
 import type { User } from "@supabase/supabase-js";
 import type { UserProfile } from "@/types/user";
@@ -53,6 +54,7 @@ export function useNavbar(): UseNavbarReturn {
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    toast.success("Signed out");
     router.push("/");
     router.refresh();
   }

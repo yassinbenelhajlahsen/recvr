@@ -92,6 +92,22 @@ npm run test:e2e         # Run Playwright E2E tests
 - `dark` class on `<html>`, managed by `ThemeProvider` + localStorage
 - Anti-FOUC inline script in `layout.tsx`. Do NOT read theme server-side.
 
+## Toast Notifications
+
+- **Library**: `sonner` — lightweight, dark-mode aware, renders via portal at app root
+- **Setup**: `<Toaster>` in `src/components/layout/Providers.tsx` via `ThemedToaster` component (reads theme from `useTheme()` context)
+- **Position**: `bottom-center`, duration `1500ms`
+- **Styling**: `richColors` mode for built-in success (green) / error (red) semantics
+- **Usage**: `import { toast } from "sonner"` then `toast.success("message")` or `toast.error("message")`
+- **Async mutations**:
+  - Workout logged / updated / deleted → `toast.success("Workout logged/updated/deleted")`
+  - Draft saved / published → `toast.success("Draft saved/Workout saved")`
+  - Profile / Fitness save → `toast.success("Profile/Fitness profile updated")`
+  - Sign out → `toast.success("Signed out")`
+  - Create exercise → `toast.success()` on success (inline in form via `setError`)
+- **Error handling**: Every API failure gets `toast.error()` with user-friendly message (e.g., "Failed to save workout", "Failed to delete workout")
+- **No modal/drawer conflicts**: Bottom-center avoids overlap with right-side drawer. Toasts rendered at body level so they persist across route changes.
+
 ## Mobile Gate
 
 - Desktop-only app — viewports <768px redirect to `/mobile` placeholder page

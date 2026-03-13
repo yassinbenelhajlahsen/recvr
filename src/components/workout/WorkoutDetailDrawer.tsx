@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Drawer } from "@/components/ui/Drawer";
 import { WorkoutForm } from "@/components/workout/WorkoutForm";
-import { WorkoutSummaryView } from "@/components/workout/WorkoutSummaryView";
 import { WorkoutViewDetail } from "@/components/workout/WorkoutViewDetail";
 import { useWorkoutStore } from "@/store/workoutStore";
 import { useWorkoutDetail } from "@/components/workout/hooks/useWorkoutDetail";
 import { formatDate, fadeSlide } from "@/lib/utils";
-import type { SessionSummaryData } from "@/types/workout";
+import type { WorkoutSaveData } from "@/types/workout";
 
 export function WorkoutDetailDrawer() {
   const {
@@ -18,7 +18,6 @@ export function WorkoutDetailDrawer() {
     drawerView,
     selectedWorkoutId,
     previewData,
-    activeSession,
     closeDrawer,
     setDrawerView,
   } = useWorkoutStore();
@@ -26,12 +25,13 @@ export function WorkoutDetailDrawer() {
 
   const { workout, setWorkout, loading } = useWorkoutDetail(isDrawerOpen, selectedWorkoutId);
 
-  function handleCreateSave(data: SessionSummaryData) {
-    setDrawerView("summary", data);
+  function handleCreateSave() {
+    toast.success("Workout logged");
+    closeDrawer();
     router.refresh();
   }
 
-  function handleEditSave(data: SessionSummaryData) {
+  function handleEditSave(data: WorkoutSaveData) {
     setWorkout({
       id: data.id,
       date: data.date,
@@ -44,30 +44,13 @@ export function WorkoutDetailDrawer() {
         order: i,
       })),
     });
+    toast.success("Workout updated");
     setDrawerView("view");
     router.refresh();
   }
 
-  function handleViewDetails() {
-    if (!activeSession) return;
-    setWorkout({
-      id: activeSession.id,
-      date: activeSession.date,
-      duration_minutes: activeSession.duration_minutes,
-      notes: activeSession.notes,
-      body_weight: activeSession.body_weight,
-      workout_exercises: activeSession.workout_exercises.map((we, i) => ({
-        ...we,
-        order: i,
-      })),
-    });
-    useWorkoutStore.setState({ selectedWorkoutId: activeSession.id });
-    setDrawerView("view");
-  }
-
   const drawerTitle =
     drawerView === "create" ? "Log Workout"
-    : drawerView === "summary" ? "Workout Logged"
     : drawerView === "edit" ? "Edit Workout"
     : workout ? formatDate(workout.date)
     : previewData ? previewData.dateFormatted
@@ -120,17 +103,6 @@ export function WorkoutDetailDrawer() {
                 onSave={handleCreateSave}
                 onDraftSave={closeDrawer}
                 onCancel={closeDrawer}
-              />
-            </motion.div>
-          )}
-
-          {/* ── Summary ── */}
-          {drawerView === "summary" && activeSession && (
-            <motion.div key="summary" {...fadeSlide}>
-              <WorkoutSummaryView
-                session={activeSession}
-                onDone={closeDrawer}
-                onViewDetails={handleViewDetails}
               />
             </motion.div>
           )}
