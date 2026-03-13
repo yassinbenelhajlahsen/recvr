@@ -16,6 +16,9 @@ npx prisma migrate dev   # Create and apply a new migration
 npx prisma generate      # Regenerate Prisma client after schema change
 npx prisma db seed       # Seed default exercises
 npx prisma studio        # Open Prisma Studio (DB GUI)
+npm run test             # Run Vitest in watch mode
+npm run test:run         # Run Vitest once (CI mode)
+npm run test:e2e         # Run Playwright E2E tests
 ```
 
 ## Code Style & Modularity
@@ -82,11 +85,28 @@ npx prisma studio        # Open Prisma Studio (DB GUI)
 - **Typography**: serif italic headlines, sans body, uppercase tracking-wider section labels
 - **Cards**: `bg-surface border border-border-subtle rounded-xl`
 - **Buttons**: Primary `bg-accent text-white rounded-lg`, Secondary `border border-border`, Ghost `text-secondary`
+- **Drawer** (`src/components/ui/Drawer.tsx`): backdrop and panel are sibling elements (React fragment wrapper). Backdrop is `z-40`, panel is `z-50` with `role="dialog"`.
 
 ## Dark Mode
 
 - `dark` class on `<html>`, managed by `ThemeProvider` + localStorage
 - Anti-FOUC inline script in `layout.tsx`. Do NOT read theme server-side.
+
+## Mobile Gate
+
+- Desktop-only app — viewports <768px redirect to `/mobile` placeholder page
+- **Server-side**: `src/proxy.ts` detects mobile User-Agent via regex, redirects to `/mobile` before auth runs
+- **Client-side**: `src/components/layout/MobileGate.tsx` listens to resize events, redirects if viewport < `md` breakpoint
+- **Allowed routes** (bypass gate): `/`, `/mobile`, `/api`, `/_next`, `/favicon`, `/privacy`, `/terms-of-service`
+
+## Legal Pages
+
+- **Privacy Policy** (`/privacy`) — 9 sections covering Supabase, OpenAI, Groq, Upstash, Vercel as third parties
+- **Terms of Service** (`/terms-of-service`) — 11 sections, AI disclaimer (not medical advice)
+- Both pages are public routes (added to `src/lib/supabase/middleware.ts` public list)
+- Legal links appear in: signup form, Settings drawer footer, shared `Footer` component
+- `src/components/ui/BackButton.tsx` — simple `history.back()` nav used on legal pages
+- `src/components/layout/Footer.tsx` — shared footer with Privacy/Terms links + copyright, rendered in `layout.tsx`
 
 ## Routing
 
@@ -95,6 +115,9 @@ npx prisma studio        # Open Prisma Studio (DB GUI)
 - `/onboarding` — locked 4-step flow (name → gender → metrics → goal). Server-side gate.
 - `/recovery` — SVG body maps + tap-to-inspect muscle detail
 - `/progress` — 1RM charts + body weight chart, side-by-side. Full-width layout.
+- `/privacy` — Privacy Policy (public, no auth required)
+- `/terms-of-service` — Terms of Service (public, no auth required)
+- `/mobile` — Mobile placeholder page (desktop-only message)
 
 ## Key Architecture
 
@@ -105,16 +128,16 @@ src/
 ├── types/              # Shared types (workout.ts, recovery.ts, user.ts, progress.ts, theme.ts, ui.ts)
 ├── app/                # Pages + API routes
 │   ├── api/exercises|workouts|recovery|user|progress/   # REST endpoints
-│   └── recovery|progress|onboarding/           # Sub-pages (Server Components)
+│   └── recovery|progress|onboarding|privacy|terms-of-service|mobile/
 ├── components/
 │   ├── DashboardClient.tsx
 │   ├── workout/        # WorkoutDetailDrawer, WorkoutForm, ExerciseCard, etc. + hooks/
 │   ├── recovery/       # RecoveryPanel, RecoveryView, BodyMap*, MuscleDetailPanel + hooks/
 │   ├── progress/       # ProgressClient, charts, selectors + hooks/
-│   ├── layout/         # Navbar, UserMenu, ThemeProvider, PageTransition + hooks/
+│   ├── layout/         # Navbar, UserMenu, ThemeProvider, PageTransition, Footer, MobileGate + hooks/
 │   ├── onboarding/     # OnboardingFlow, MetricsInputs
 │   ├── settings/       # SettingsDrawer, AccountTab, FitnessTab + hooks/
-│   └── ui/             # Modal, Drawer, DropdownMenu, FloatingInput, GoalSelector, icons
+│   └── ui/             # Modal, Drawer, DropdownMenu, FloatingInput, GoalSelector, BackButton, icons
 ├── store/              # Zustand: workoutStore, appStore, clientStore
 ├── lib/                # prisma.ts, openai.ts, recovery.ts, units.ts, utils.ts, fetch.ts, hooks.ts, logger.ts, supabase/
 └── proxy.ts            # Route protection
@@ -200,6 +223,19 @@ src/
 - **AI suggestion cooldown**: `POST /api/suggest` returns `_cooldown` (seconds remaining) + `_cached: true` on cache hits. `GET /api/suggest/cooldown` returns `{ cooldown, suggestionId? }`. `useSuggestion` manages countdown timer. Cooldown blocked if `timeSinceLast < 1hr` (DB authoritative).
 - Draft creation (`POST /api/workouts/draft`) does NOT invalidate recovery (drafts excluded from recovery engine).
 
+### Voice Workout Logging
+
+- **Flow**: Record audio → Groq Whisper transcription → OpenAI GPT-4o-mini structured parsing → DB exercise matching → populate WorkoutForm
+- **Groq singleton**: `src/lib/groq.ts` — `globalThis` pattern, used only for Whisper transcription. Env var: `GROQ_API_KEY`.
+- **Shared exercise matcher**: `src/lib/exercise-matcher.ts` — `resolveExercise(name, muscleGroups, allExercises, userId)`. Used by both `POST /api/workouts/draft` and `POST /api/voice/transcribe`.
+- **API**: `POST /api/voice/transcribe` — accepts `FormData` with `audio` blob. Auth via `getUser()`. Returns `VoiceTranscribeResponse` (transcript + matched exercises + unmatched names).
+- **Rate limiting**: Redis key `voice:{userId}` — max 10 requests/hour. Graceful skip if Redis unavailable.
+- **Types**: `src/types/voice.ts` — `ParsedExercise`, `VoiceTranscribeResponse`
+- **Hook**: `src/components/workout/hooks/useVoiceRecorder.ts` — states: `idle → requesting → recording → processing → done → error`. Auto-stops at 120s. Uses `fetchWithAuth` for API call.
+- **Component**: `src/components/workout/VoiceInput.tsx` — mic button next to "Add Exercise" in WorkoutForm. Hidden if `MediaRecorder` unsupported.
+- **Bulk add**: `useExerciseList.bulkAddExercises()` — merges sets when same `exercise_id` appears multiple times, appends new exercises.
+- **Icons**: `MicIcon`, `StopIcon` in `src/components/ui/icons.tsx`
+
 ## Client-Side Data Fetching (SWR)
 
 - **SWR** installed. Global config in `src/components/layout/Providers.tsx` (wraps ThemeProvider + SWRConfig). `layout.tsx` uses `<Providers>` instead of `<ThemeProvider>`.
@@ -210,6 +246,22 @@ src/
 - **Mutation invalidation**: call `globalMutate(keyFilter)` from `swr` alongside `router.refresh()`. Key filters: workouts → `k.startsWith("/api/workouts/")`, profile → `"/api/user/profile"`, exercises → `k.startsWith("/api/exercises")`.
 - **Shared hooks**: `useRecovery`, `useProgress`, `useDebouncedValue` in `src/lib/hooks.ts`. `useNavbar` profile typed as `UserProfile` from `@/types/user`.
 
+## Testing
+
+- **Vitest + RTL** for unit/integration/component tests. **Playwright** for E2E.
+- `npm run test:run` — all Vitest tests (223 as of Tier 1/2 test expansion). `npm run test:e2e` — Playwright smoke + authenticated E2E suites.
+- **Mock aliases** in `vitest.config.ts` (array format, specific before generic): `@/lib/prisma`, `@/lib/supabase/server`, `@/lib/supabase/client`, `@/lib/openai`, `@/lib/redis`, `@/lib/logger` all map to `src/test/mocks/`.
+- **`@/lib/cache` intentionally NOT aliased** — tests hit real cache logic against the null-redis mock.
+- **Auth mock pattern**: `src/test/mocks/supabase-server.ts` exports `mockSupabase`, `createClient`, `TEST_USER_ID`, `mockUnauthorized()`, `mockAuthorized()`. Import these in API route tests.
+- **`vi.clearAllMocks()` in `beforeEach`** (NOT `resetAllMocks`) — clears call history without wiping `mockResolvedValue` implementations.
+- **`withLogging` mock** is a passthrough (`(fn) => fn`) — route handlers don't need wrapping in tests.
+- **E2E tests** live in `e2e/` and run separately via `playwright test`. Vitest `include: ["src/**/*.test.{ts,tsx}"]` ensures no overlap.
+- **E2E auth**: `e2e/global-setup.ts` signs in once via UI and saves cookies to `e2e/.auth/user.json`. Set `E2E_TEST_EMAIL` + `E2E_TEST_PASSWORD` env vars. Test user must have `onboarding_completed = true` in DB.
+- **Playwright projects**: `chromium` (unauthenticated — smoke + auth spec), `authenticated` (uses stored state — dashboard, workout, recovery, progress specs).
+- **`[id]` route params**: pass as `Promise.resolve({ id: "..." })` in tests — routes declare `params: Promise<{ id: string }>`.
+- **useSuggestion hook tests**: mock `swr` module via `vi.mock('swr', ...)` to control `useSWR` return value. Use `vi.useFakeTimers()` for timer decrement tests. Mount with no wrapper needed (SWR is fully mocked).
+- **Test structure**: `src/lib/__tests__/`, `src/store/__tests__/`, `src/components/**/__tests__/`, `src/app/api/**/__tests__/`
+
 ## Logging
 
 - `src/lib/logger.ts` — pino singleton (`logger`) + `withLogging` HOF. Every exported route handler must be wrapped: `export const GET = withLogging(async function GET(...) { ... })`.
@@ -217,4 +269,4 @@ src/
 
 ## Environment Variables
 
-See `.env.example`. Key vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `DIRECT_URL`, `OPENAI_API_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+See `.env.example`. Key vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `DIRECT_URL`, `OPENAI_API_KEY`, `GROQ_API_KEY`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `E2E_TEST_EMAIL`, `E2E_TEST_PASSWORD`
