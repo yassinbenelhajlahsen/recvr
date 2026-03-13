@@ -12,6 +12,7 @@ export function Drawer({ open, onClose, title, headerRight, size = "default", ch
   // this guarantees the drawer is in the DOM with translate-x-full before
   // any rAF fires, giving the CSS transition a start state to animate from.
   useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- portal mount before paint requires layout-effect setState
     if (open) setMounted(true);
   }, [open]);
 
@@ -43,16 +44,18 @@ export function Drawer({ open, onClose, title, headerRight, size = "default", ch
   if (!mounted) return null;
 
   return createPortal(
-    <div
-      className={`fixed inset-0 z-40 flex justify-end transition-opacity duration-300 ${
-        visible ? "opacity-100" : "opacity-0"
-      } bg-black/60`}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <>
+      {/* Backdrop */}
       <div
-        className={`relative flex flex-col w-full ${size === "lg" ? "max-w-xl" : "max-w-md"} h-full bg-elevated shadow-2xl transition-transform ${
+        className={`fixed inset-0 z-40 transition-opacity duration-300 ${
+          visible ? "opacity-100" : "opacity-0"
+        } bg-black/60`}
+        onMouseDown={onClose}
+      />
+      {/* Drawer panel */}
+      <div
+        role="dialog"
+        className={`fixed inset-y-0 right-0 z-50 flex flex-col w-full ${size === "lg" ? "max-w-xl" : "max-w-md"} h-full bg-elevated shadow-2xl transition-transform ${
           visible
             ? "duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] translate-x-0"
             : "duration-250 ease-[cubic-bezier(0.4,0,1,1)] translate-x-full"
@@ -80,7 +83,7 @@ export function Drawer({ open, onClose, title, headerRight, size = "default", ch
           {children}
         </div>
       </div>
-    </div>,
+    </>,
     document.body
   );
 }
