@@ -78,6 +78,7 @@ export function useProgressFilters(
   // When data arrives from SWR (exercises goes from [] → populated), initialize selection
   useEffect(() => {
     if (selectedExerciseId === "" && exercises.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time init when SWR data arrives
       setSelectedExerciseId(exercises[0].id);
     }
   }, [exercises, selectedExerciseId]);

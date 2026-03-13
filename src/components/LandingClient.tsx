@@ -620,6 +620,7 @@ export function LandingClient({ isAuthenticated }: Props) {
           </div>
         </motion.div>
       </section>
+
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Drawer } from "@/components/ui/Drawer";
@@ -77,9 +77,14 @@ export function WorkoutDetailDrawer() {
   // Freeze the title during close animation — closeDrawer() resets drawerView
   // immediately, which would drop the title to undefined and collapse the header
   // before the drawer finishes sliding out.
-  const frozenTitle = useRef<string | undefined>(undefined);
-  if (drawerTitle !== undefined) frozenTitle.current = drawerTitle;
-  const effectiveTitle = isDrawerOpen ? drawerTitle : frozenTitle.current;
+  const [frozenTitle, setFrozenTitle] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (drawerTitle !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- cache last known title for close animation
+      setFrozenTitle(drawerTitle);
+    }
+  }, [drawerTitle]);
+  const effectiveTitle = isDrawerOpen ? drawerTitle : frozenTitle;
 
   const initialData = workout
     ? {

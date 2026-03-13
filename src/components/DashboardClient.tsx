@@ -77,7 +77,7 @@ export function DashboardClient({ displayName, workouts, hasFilters, recovery, o
               </div>
             ) : (
               <div className="space-y-3">
-                {workouts.map((w, i) => {
+                {workouts.map((w) => {
                   const displayNames =
                     w.exerciseNames.length > 3
                       ? w.exerciseNames.slice(0, 3).join(", ") + ` +${w.exerciseNames.length - 3}`

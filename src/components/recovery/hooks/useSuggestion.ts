@@ -70,6 +70,7 @@ export function useSuggestion() {
     initializedRef.current = true;
     const remaining = Math.max(0, Math.floor((cooldownData.expiresAt - Date.now()) / 1000));
     if (remaining > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time init from SWR cooldown data
       setCooldownSeconds(remaining);
       if (cooldownData.suggestion) {
         setState({ suggestion: cooldownData.suggestion, isLoading: false, error: null });
@@ -102,6 +103,7 @@ export function useSuggestion() {
       hadCooldownRef.current = true;
     } else if (hadCooldownRef.current) {
       hadCooldownRef.current = false;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset to idle when cooldown expires
       setState({ suggestion: null, isLoading: false, error: null });
       setDraftId(null);
       setSuggestionId(null);
@@ -212,7 +214,8 @@ export function useSuggestion() {
       if (contentType.includes("application/json")) {
         // Cached response — instant JSON path
         const data = await res.json();
-        const { _cooldown, _cached: _c, _draftId, _suggestionId, ...suggestion } = data;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- strip metadata fields from suggestion object
+        const { _cooldown, _cached, _draftId, _suggestionId, ...suggestion } = data;
         if (typeof _cooldown === "number" && _cooldown > 0) {
           setCooldownSeconds(_cooldown);
           globalMutate(

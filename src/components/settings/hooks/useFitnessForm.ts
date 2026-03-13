@@ -46,6 +46,7 @@ export function useFitnessForm(
   // Sync state when user prop or unitSystem changes
   useEffect(() => {
     if (!user) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync derived form state from props
     setHeight(
       user.height_inches
         ? displayHeight(user.height_inches, unitSystem)
@@ -67,6 +68,7 @@ export function useFitnessForm(
   // Reset saving state when drawer closes
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset form on drawer close
       setSaving(false);
     }
   }, [open]);

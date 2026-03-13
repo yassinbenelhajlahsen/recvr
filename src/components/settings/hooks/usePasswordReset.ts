@@ -14,6 +14,7 @@ export function usePasswordReset(open: boolean) {
   // Reset on drawer close
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset form on drawer close
       setNewPassword("");
       setConfirmPassword("");
       setShowNewPassword(false);

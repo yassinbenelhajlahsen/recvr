@@ -10,6 +10,7 @@ export function useDeleteAccount(open: boolean) {
   // Reset on drawer close
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset form on drawer close
       setConfirmDelete(false);
     }
   }, [open]);
