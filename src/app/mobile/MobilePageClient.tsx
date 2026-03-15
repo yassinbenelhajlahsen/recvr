@@ -1,15 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { AppleIconDark, AppleIconLight } from "@/components/ui/icons";
-import { useTheme } from "@/components/layout/ThemeProvider";
+import { AppleIcon } from "@/components/ui/icons";
 
 export default function MobilePageClient() {
-  const { theme } = useTheme();
-
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-6 text-center">
-      {theme === "dark" ? <AppleIconLight /> : <AppleIconDark />}
+      <AppleIcon className="w-20 h-20 shrink-0 text-primary" />
       <h1 className="mt-20 text-2xl font-semibold text-primary">
         Mobile app coming soon
       </h1>

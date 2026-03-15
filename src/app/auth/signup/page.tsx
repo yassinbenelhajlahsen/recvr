@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { FloatingInput } from "@/components/ui/FloatingInput";
+import { AppleIcon } from "@/components/ui/icons";
 import { PasswordChecklist, passwordMeetsRequirements } from "@/components/ui/PasswordChecklist";
 
 const EyeIcon = () => (
@@ -31,6 +32,7 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
@@ -69,6 +71,16 @@ export default function SignUpPage() {
     if (error) { setError(error.message); setGoogleLoading(false); }
   }
 
+  async function handleAppleSignIn() {
+    setAppleLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "apple",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) { setError(error.message); setAppleLoading(false); }
+  }
+
   const confirmMismatch = confirm.length > 0 && confirm !== password;
 
   return (
@@ -94,6 +106,17 @@ export default function SignUpPage() {
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
           </svg>
           {googleLoading ? "Redirecting…" : "Continue with Google"}
+        </button>
+
+        {/* Apple */}
+        <button
+          type="button"
+          onClick={handleAppleSignIn}
+          disabled={appleLoading}
+          className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-border bg-elevated hover:bg-surface px-4 py-[11px] text-[15px] font-medium text-primary transition-colors duration-150 disabled:opacity-50"
+        >
+          <AppleIcon />
+          {appleLoading ? "Redirecting…" : "Continue with Apple"}
         </button>
 
         {/* Divider */}

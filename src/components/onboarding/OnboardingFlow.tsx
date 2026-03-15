@@ -18,17 +18,62 @@ const slideVariants = {
   exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
 };
 
-function StepDots({ current, total }: { current: number; total: number }) {
+function StepHeader({
+  current,
+  total,
+  onBack,
+}: {
+  current: number;
+  total: number;
+  onBack: () => void;
+}) {
   return (
-    <div className="flex items-center justify-center gap-2 mb-8">
-      {Array.from({ length: total }, (_, i) => (
-        <div
-          key={i}
-          className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-            i <= current ? "bg-accent" : "bg-border"
-          }`}
-        />
-      ))}
+    <div className="flex items-center mb-8">
+      <div className="w-8 flex items-center">
+        <AnimatePresence>
+          {current > 0 && (
+            <motion.button
+              key="back-btn"
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -6 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              type="button"
+              onClick={onBack}
+              className="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-primary hover:bg-elevated transition-colors duration-150"
+              aria-label="Go back"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center gap-2">
+        {Array.from({ length: total }, (_, i) => (
+          <div
+            key={i}
+            className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+              i <= current ? "bg-accent" : "bg-border"
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Spacer balances the back button so dots stay centered */}
+      <div className="w-8" />
     </div>
   );
 }
@@ -70,6 +115,11 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
     setStep((s) => s + 1);
   }
 
+  function back() {
+    setDirection(-1);
+    setStep((s) => s - 1);
+  }
+
   async function finish() {
     setSaving(true);
     const trimmedName = name.trim() || null;
@@ -97,9 +147,10 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
   return (
     <div className="min-h-[calc(100dvh-65px)] flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-[420px]">
-        <StepDots current={step} total={4} />
+        <StepHeader current={step} total={4} onBack={back} />
 
-        <AnimatePresence mode="wait" custom={direction}>
+        <div style={{ overflow: "hidden" }}>
+        <AnimatePresence mode="popLayout" custom={direction} initial={false}>
           {step === 0 && (
             <motion.div
               key="step-0"
@@ -287,6 +338,8 @@ export function OnboardingFlow({ initialName }: { initialName: string }) {
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
+
       </div>
     </div>
   );

@@ -28,7 +28,7 @@ Full CRUD for workouts with exercise search, set tracking, draft support, and mu
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 |
-| Auth | Supabase Auth (email/password + Google OAuth) |
+| Auth | Supabase Auth (email/password + Google + Apple Auth) |
 | Database | PostgreSQL (Supabase) via Prisma 7 |
 | AI | OpenAI GPT-4o-mini, Groq Whisper |
 | Caching | Upstash Redis |

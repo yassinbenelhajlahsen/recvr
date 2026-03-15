@@ -4,7 +4,7 @@
 
 - **Next.js 16** (App Router, `src/` directory, `@/*` import alias)
 - **Tailwind CSS v4** (class-based dark mode via `@custom-variant dark`)
-- **Supabase Auth** (`@supabase/ssr`) — email/password + Google OAuth
+- **Supabase Auth** (`@supabase/ssr`) — email/password + Google + Apple Auth
 - **Prisma 7** (schema in `prisma/schema.prisma`, client output in `src/generated/prisma`)
 - **TypeScript**
 
