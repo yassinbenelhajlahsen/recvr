@@ -78,6 +78,8 @@ export function WorkoutForm({ workoutId, initialData, onSave, onDraftSave, onCan
     voiceState,
     error: voiceError,
     elapsed,
+    audioLevels,
+    liveTranscript,
     transcript,
     result: voiceResult,
     startRecording,
@@ -231,24 +233,28 @@ export function WorkoutForm({ workoutId, initialData, onSave, onDraftSave, onCan
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold text-muted uppercase tracking-wider">Exercises</p>
-          <div className="flex items-center gap-2">
-            <VoiceInput
-              voiceState={voiceState}
-              elapsed={elapsed}
-              error={voiceError}
-              disabled={saving || savingDraft}
-              onToggle={handleVoiceToggle}
-              onReset={resetVoice}
-            />
-            {!showSearch && (
-              <button
-                onClick={openSearch}
-                className="flex items-center gap-1.5 text-sm font-semibold text-accent hover:underline"
-              >
-                <span className="text-base leading-none">+</span> Add Exercise
-              </button>
-            )}
-          </div>
+          {exercises.length > 0 && (
+            <div className="flex items-center gap-2">
+              <VoiceInput
+                voiceState={voiceState}
+                elapsed={elapsed}
+                audioLevels={audioLevels}
+                liveTranscript={liveTranscript}
+                error={voiceError}
+                disabled={saving || savingDraft}
+                onToggle={handleVoiceToggle}
+                onReset={resetVoice}
+              />
+              {!showSearch && (
+                <button
+                  onClick={openSearch}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-accent hover:underline"
+                >
+                  <span className="text-base leading-none">+</span> Add Exercise
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {voiceState === "done" && voiceResult && transcript && (
@@ -293,10 +299,30 @@ export function WorkoutForm({ workoutId, initialData, onSave, onDraftSave, onCan
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="rounded-xl bg-surface border border-border-subtle border-dashed p-12 text-center"
+              className="rounded-xl bg-surface border border-border-subtle p-8 space-y-5"
             >
-              <p className="font-display text-xl text-muted">No exercises added yet</p>
-              <p className="text-sm text-muted mt-1">Tap &ldquo;Add Exercise&rdquo; or use the mic to get started</p>
+              <VoiceInput
+                hero
+                voiceState={voiceState}
+                elapsed={elapsed}
+                audioLevels={audioLevels}
+                liveTranscript={liveTranscript}
+                error={voiceError}
+                disabled={saving || savingDraft}
+                onToggle={handleVoiceToggle}
+                onReset={resetVoice}
+              />
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-border-subtle" />
+                <span className="text-xs text-muted uppercase tracking-wider">or</span>
+                <div className="flex-1 h-px bg-border-subtle" />
+              </div>
+              <button
+                onClick={openSearch}
+                className="w-full rounded-lg border border-border-subtle py-3 text-sm font-semibold text-secondary hover:text-accent hover:border-accent transition-colors"
+              >
+                + Add exercises manually
+              </button>
             </motion.div>
           ) : null}
         </AnimatePresence>
