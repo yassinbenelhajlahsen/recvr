@@ -27,9 +27,14 @@ export function withLogging<H extends (req: Request, ...args: any[]) => Promise<
       const duration = Math.round(performance.now() - start);
       const status = response.status;
 
-      if (status >= 500) reqLog.error({ status, duration }, "request failed");
-      else if (status >= 400) reqLog.warn({ status, duration }, "request client error");
-      else reqLog.info({ status, duration }, "request completed");
+      if (status >= 400) {
+        let body: unknown;
+        try { body = await response.clone().json(); } catch { /* non-JSON body */ }
+        if (status >= 500) reqLog.error({ status, duration, body }, "request failed");
+        else reqLog.warn({ status, duration, body }, "request client error");
+      } else {
+        reqLog.info({ status, duration }, "request completed");
+      }
 
       return response;
     } catch (err) {
