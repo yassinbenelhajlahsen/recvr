@@ -63,4 +63,24 @@ describe("GET /auth/callback", () => {
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain("/progress");
   });
+
+  it("ignores next param with protocol-relative URL (//)", async () => {
+    const res = await GET(makeRequest({ code: "valid-code", next: "//evil.com" }));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/dashboard");
+    expect(res.headers.get("location")).not.toContain("evil.com");
+  });
+
+  it("ignores next param without leading slash", async () => {
+    const res = await GET(makeRequest({ code: "valid-code", next: "evil.com/steal" }));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/dashboard");
+    expect(res.headers.get("location")).not.toContain("evil.com");
+  });
+
+  it("ignores empty next param and falls back to /dashboard", async () => {
+    const res = await GET(makeRequest({ code: "valid-code", next: "" }));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/dashboard");
+  });
 });

@@ -113,4 +113,20 @@ describe("POST /api/voice/transcribe", () => {
     expect(data.exercises).toBeUndefined();
     expect(groq.audio.transcriptions.create).toHaveBeenCalled();
   });
+
+  it("returns 400 for unsupported audio MIME type", async () => {
+    const audio = new Blob([new Uint8Array(2048)], { type: "audio/flac" });
+    const req = makeFormDataRequest(audio);
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/format/i);
+  });
+
+  it("passes through when audio.type is empty string", async () => {
+    const audio = new Blob([new Uint8Array(2048)], { type: "" });
+    const req = makeFormDataRequest(audio);
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+  });
 });

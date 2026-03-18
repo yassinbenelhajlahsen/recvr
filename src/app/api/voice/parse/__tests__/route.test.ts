@@ -91,6 +91,36 @@ describe("POST /api/voice/parse", () => {
     expect(res.status).toBe(502);
   });
 
+  it("returns 429 when rate limit is exceeded", async () => {
+    (redis.get as ReturnType<typeof vi.fn>).mockResolvedValue(20);
+    (redis.ttl as ReturnType<typeof vi.fn>).mockResolvedValue(1800);
+    const res = await POST(makeRequest({ transcript: "bench press" }));
+    expect(res.status).toBe(429);
+    expect(res.headers.get("Retry-After")).toBe("1800");
+  });
+
+  it("returns 429 with fallback Retry-After when TTL is unknown", async () => {
+    (redis.get as ReturnType<typeof vi.fn>).mockResolvedValue(20);
+    (redis.ttl as ReturnType<typeof vi.fn>).mockResolvedValue(-1);
+    const res = await POST(makeRequest({ transcript: "bench press" }));
+    expect(res.status).toBe(429);
+    expect(res.headers.get("Retry-After")).toBe("3600");
+  });
+
+  it("returns 400 when transcript exceeds 10000 characters", async () => {
+    const transcript = "a".repeat(10001);
+    const res = await POST(makeRequest({ transcript }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/too long/i);
+  });
+
+  it("continues normally when Redis throws during rate check", async () => {
+    (redis.get as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Redis down"));
+    const res = await POST(makeRequest({ transcript: "bench press 3 sets of 10 at 135" }));
+    expect(res.status).toBe(200);
+  });
+
   it("creates custom exercise and invalidates cache when no match found", async () => {
     (prisma.exercise.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([]);
     (openai.chat.completions.create as ReturnType<typeof vi.fn>).mockResolvedValue({

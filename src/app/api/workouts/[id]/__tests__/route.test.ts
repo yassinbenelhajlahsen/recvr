@@ -268,4 +268,105 @@ describe("PUT /api/workouts/[id]", () => {
     });
     expect(res.status).toBe(500);
   });
+
+  it("returns 400 when exercises exceed max (50)", async () => {
+    const exercises = Array.from({ length: 51 }, (_, i) => ({
+      exercise_id: "ex-1",
+      order: i,
+      sets: [{ set_number: 1, reps: "10", weight: "100" }],
+    }));
+    const res = await PUT(makeRequest("PUT", { ...VALID_BODY, exercises }), {
+      params: Promise.resolve({ id: WORKOUT_ID }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/exercises/i);
+  });
+
+  it("returns 400 when sets exceed max per exercise (20)", async () => {
+    const sets = Array.from({ length: 21 }, (_, i) => ({ set_number: i + 1, reps: "10", weight: "100" }));
+    const exercises = [{ exercise_id: "ex-1", order: 0, sets }];
+    const res = await PUT(makeRequest("PUT", { ...VALID_BODY, exercises }), {
+      params: Promise.resolve({ id: WORKOUT_ID }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/sets/i);
+  });
+
+  it("returns 400 for negative reps", async () => {
+    const exercises = [{ exercise_id: "ex-1", order: 0, sets: [{ set_number: 1, reps: "-5", weight: "100" }] }];
+    const res = await PUT(makeRequest("PUT", { ...VALID_BODY, exercises }), {
+      params: Promise.resolve({ id: WORKOUT_ID }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/negative/i);
+  });
+
+  it("returns 400 for negative weight", async () => {
+    const exercises = [{ exercise_id: "ex-1", order: 0, sets: [{ set_number: 1, reps: "10", weight: "-10" }] }];
+    const res = await PUT(makeRequest("PUT", { ...VALID_BODY, exercises }), {
+      params: Promise.resolve({ id: WORKOUT_ID }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/negative/i);
+  });
+
+  it("returns 400 for out-of-range reps (>10000)", async () => {
+    const exercises = [{ exercise_id: "ex-1", order: 0, sets: [{ set_number: 1, reps: "10001", weight: "100" }] }];
+    const res = await PUT(makeRequest("PUT", { ...VALID_BODY, exercises }), {
+      params: Promise.resolve({ id: WORKOUT_ID }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/range/i);
+  });
+
+  it("returns 400 for out-of-range weight (>10000)", async () => {
+    const exercises = [{ exercise_id: "ex-1", order: 0, sets: [{ set_number: 1, reps: "10", weight: "10001" }] }];
+    const res = await PUT(makeRequest("PUT", { ...VALID_BODY, exercises }), {
+      params: Promise.resolve({ id: WORKOUT_ID }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/range/i);
+  });
+
+  it("returns 400 for duration out of range (-1)", async () => {
+    const res = await PUT(makeRequest("PUT", { ...VALID_BODY, duration_minutes: -1 }), {
+      params: Promise.resolve({ id: WORKOUT_ID }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/duration/i);
+  });
+
+  it("returns 400 for duration out of range (1000)", async () => {
+    const res = await PUT(makeRequest("PUT", { ...VALID_BODY, duration_minutes: 1000 }), {
+      params: Promise.resolve({ id: WORKOUT_ID }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/duration/i);
+  });
+
+  it("returns 400 for body_weight of 0", async () => {
+    const res = await PUT(makeRequest("PUT", { ...VALID_BODY, body_weight: 0 }), {
+      params: Promise.resolve({ id: WORKOUT_ID }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/body weight/i);
+  });
+
+  it("returns 400 for body_weight out of range (1000)", async () => {
+    const res = await PUT(makeRequest("PUT", { ...VALID_BODY, body_weight: 1000 }), {
+      params: Promise.resolve({ id: WORKOUT_ID }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/body weight/i);
+  });
 });
