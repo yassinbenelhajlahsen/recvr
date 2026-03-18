@@ -79,13 +79,25 @@ export const PUT = withLogging(async function PUT(
 
     // Validate sets
     if (Array.isArray(exercises)) {
+      if (exercises.length > 50) {
+        return NextResponse.json({ error: "Too many exercises (max 50)" }, { status: 400 });
+      }
       for (const ex of exercises) {
         if (!Array.isArray(ex.sets)) continue;
+        if (ex.sets.length > 20) {
+          return NextResponse.json({ error: "Too many sets per exercise (max 20)" }, { status: 400 });
+        }
         for (const s of ex.sets) {
           const reps = parseInt(String(s.reps));
           const weight = parseFloat(String(s.weight));
           if (isNaN(reps) || isNaN(weight)) {
             return NextResponse.json({ error: "Reps and weight must be valid numbers" }, { status: 400 });
+          }
+          if (reps < 0 || weight < 0) {
+            return NextResponse.json({ error: "Reps or weight cannot be negative" }, { status: 400 });
+          }
+          if (reps > 10000 || weight > 10000) {
+            return NextResponse.json({ error: "Reps or weight values are out of range" }, { status: 400 });
           }
         }
       }
@@ -94,6 +106,14 @@ export const PUT = withLogging(async function PUT(
     const parsedDuration = duration_minutes ? parseInt(String(duration_minutes)) : null;
     if (parsedDuration !== null && isNaN(parsedDuration)) {
       return NextResponse.json({ error: "duration_minutes must be a valid number" }, { status: 400 });
+    }
+    if (parsedDuration !== null && (parsedDuration < 1 || parsedDuration > 999)) {
+      return NextResponse.json({ error: "Duration must be between 1 and 999 minutes" }, { status: 400 });
+    }
+
+    const parsedBodyWeight = body_weight != null ? parseFloat(String(body_weight)) : null;
+    if (parsedBodyWeight !== null && (isNaN(parsedBodyWeight) || parsedBodyWeight < 1 || parsedBodyWeight > 999)) {
+      return NextResponse.json({ error: "Body weight must be between 1 and 999" }, { status: 400 });
     }
 
     // Verify all submitted exercise IDs belong to this user or are global exercises.
@@ -121,7 +141,7 @@ export const PUT = withLogging(async function PUT(
           : existing.date,
         notes: notes || null,
         duration_minutes: parsedDuration,
-        body_weight: typeof body_weight === "number" && body_weight > 0 ? body_weight : null,
+        body_weight: parsedBodyWeight !== null ? parsedBodyWeight : null,
         workout_exercises: {
           create: exercises.map((ex: { exercise_id: string; order?: number; sets: { set_number: number; reps: string; weight: string }[] }, i: number) => ({
             exercise_id: ex.exercise_id,
@@ -142,8 +162,7 @@ export const PUT = withLogging(async function PUT(
     await invalidateRecovery(user.id);
 
     // Smart sync: update User.weight_lbs only if this is the latest workout with body_weight
-    const parsedWeight = typeof body_weight === "number" && body_weight > 0 ? body_weight : null;
-    if (parsedWeight) {
+    if (parsedBodyWeight) {
       const latest = await prisma.workout.findFirst({
         where: { user_id: user.id, body_weight: { not: null } },
         orderBy: { date: "desc" },
@@ -152,7 +171,7 @@ export const PUT = withLogging(async function PUT(
       if (latest && latest.id === id) {
         await prisma.user.update({
           where: { id: user.id },
-          data: { weight_lbs: Math.round(parsedWeight) },
+          data: { weight_lbs: Math.round(parsedBodyWeight) },
         });
       }
     }

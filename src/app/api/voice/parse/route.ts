@@ -4,8 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { openai } from "@/lib/openai";
 import { resolveExercise } from "@/lib/exercise-matcher";
 import { invalidateExercises } from "@/lib/cache";
+import { redis } from "@/lib/redis";
 import { logger, withLogging } from "@/lib/logger";
 import type { ParsedExercise, VoiceTranscribeResponse } from "@/types/voice";
+
+const PARSE_RATE_LIMIT_MAX = 20;
+const PARSE_RATE_LIMIT_WINDOW = 3600; // 1 hour
 
 const VALID_MUSCLE_GROUPS = new Set([
   "chest", "back", "shoulders", "biceps", "triceps", "forearms",
@@ -33,10 +37,32 @@ export const POST = withLogging(async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Rate limiting — GPT-4o-mini parsing
+  if (redis) {
+    try {
+      const parseKey = `voice-parse:${user.id}`;
+      const count = await redis.get<number>(parseKey);
+      if (count !== null && count >= PARSE_RATE_LIMIT_MAX) {
+        const ttl = await redis.ttl(parseKey);
+        return NextResponse.json(
+          { error: "Rate limit exceeded. Try again later." },
+          { status: 429, headers: { "Retry-After": String(ttl > 0 ? ttl : PARSE_RATE_LIMIT_WINDOW) } },
+        );
+      }
+      const newCount = await redis.incr(parseKey);
+      if (newCount === 1) await redis.expire(parseKey, PARSE_RATE_LIMIT_WINDOW);
+    } catch {
+      // Redis failure = skip rate limit
+    }
+  }
+
   const body = await request.json().catch(() => null);
   const transcript = body?.transcript?.trim();
   if (!transcript) {
     return NextResponse.json({ error: "No transcript provided" }, { status: 400 });
+  }
+  if (transcript.length > 10000) {
+    return NextResponse.json({ error: "Transcript too long (max 10,000 characters)" }, { status: 400 });
   }
 
   // LLM parsing via OpenAI

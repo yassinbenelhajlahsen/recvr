@@ -82,14 +82,38 @@ export function useWorkoutForm({
       setError("Date cannot be in the future");
       return;
     }
+    if (duration && (Number(duration) < 1 || Number(duration) > 999)) {
+      setError("Duration must be between 1 and 999 minutes");
+      return;
+    }
+    if (bodyWeight && (parseFloat(bodyWeight) < 1 || parseFloat(bodyWeight) > 999)) {
+      setError("Body weight must be between 1 and 999");
+      return;
+    }
     if (exercises.length === 0) {
       setError("Add at least one exercise");
       return;
     }
+    if (exercises.length > 50) {
+      setError("Too many exercises (max 50)");
+      return;
+    }
     for (const ex of exercises) {
+      if (ex.sets.length > 20) {
+        setError(`Too many sets for ${ex.exercise_name} (max 20)`);
+        return;
+      }
       for (const s of ex.sets) {
         if (!s.reps || !s.weight) {
           setError(`Fill in reps and weight for all sets in ${ex.exercise_name}`);
+          return;
+        }
+        if (Number(s.reps) < 0 || Number(s.weight) < 0) {
+          setError(`Reps or weight cannot be negative in ${ex.exercise_name}`);
+          return;
+        }
+        if (Number(s.reps) > 10000 || Number(s.weight) > 10000) {
+          setError(`Reps or weight values are out of range in ${ex.exercise_name}`);
           return;
         }
       }
@@ -162,6 +186,10 @@ export function useWorkoutForm({
   async function handleSaveAsDraft() {
     if (exercises.length === 0) {
       setError("Add at least one exercise");
+      return;
+    }
+    if (exercises.length > 50) {
+      setError("Too many exercises (max 50)");
       return;
     }
     setError("");

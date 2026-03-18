@@ -52,6 +52,11 @@ export const POST = withLogging(async function POST(request: Request) {
     return NextResponse.json({ error: "Audio too large (max 25MB)" }, { status: 400 });
   }
 
+  const ALLOWED_AUDIO_TYPES = ["audio/webm", "audio/mp4", "audio/mpeg", "audio/ogg", "audio/wav"];
+  if (audio.type && !ALLOWED_AUDIO_TYPES.includes(audio.type)) {
+    return NextResponse.json({ error: "Unsupported audio format" }, { status: 400 });
+  }
+
   // Whisper transcription via Groq
   let transcript: string;
   try {

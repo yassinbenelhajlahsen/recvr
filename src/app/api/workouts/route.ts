@@ -92,14 +92,28 @@ export const POST = withLogging(async function POST(request: Request) {
     }
   }
 
+  // Validate exercises count
+  if (exercises.length > 50) {
+    return NextResponse.json({ error: "Too many exercises (max 50)" }, { status: 400 });
+  }
+
   // Validate sets
   for (const ex of exercises) {
     if (!Array.isArray(ex.sets)) continue;
+    if (ex.sets.length > 20) {
+      return NextResponse.json({ error: "Too many sets per exercise (max 20)" }, { status: 400 });
+    }
     for (const s of ex.sets) {
       const reps = parseInt(String(s.reps));
       const weight = parseFloat(String(s.weight));
       if (isNaN(reps) || isNaN(weight)) {
         return NextResponse.json({ error: "Reps and weight must be valid numbers" }, { status: 400 });
+      }
+      if (reps < 0 || weight < 0) {
+        return NextResponse.json({ error: "Reps or weight cannot be negative" }, { status: 400 });
+      }
+      if (reps > 10000 || weight > 10000) {
+        return NextResponse.json({ error: "Reps or weight values are out of range" }, { status: 400 });
       }
     }
   }
@@ -107,6 +121,14 @@ export const POST = withLogging(async function POST(request: Request) {
   const parsedDuration = duration_minutes ? parseInt(String(duration_minutes)) : null;
   if (parsedDuration !== null && isNaN(parsedDuration)) {
     return NextResponse.json({ error: "duration_minutes must be a valid number" }, { status: 400 });
+  }
+  if (parsedDuration !== null && (parsedDuration < 1 || parsedDuration > 999)) {
+    return NextResponse.json({ error: "Duration must be between 1 and 999 minutes" }, { status: 400 });
+  }
+
+  const parsedBodyWeight = body_weight != null ? parseFloat(String(body_weight)) : null;
+  if (parsedBodyWeight !== null && (isNaN(parsedBodyWeight) || parsedBodyWeight < 1 || parsedBodyWeight > 999)) {
+    return NextResponse.json({ error: "Body weight must be between 1 and 999" }, { status: 400 });
   }
 
   try {

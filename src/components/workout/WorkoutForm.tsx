@@ -184,14 +184,18 @@ export function WorkoutForm({ workoutId, initialData, onSave, onDraftSave, onCan
           </div>
           <div className="space-y-1.5 w-20">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted">
-              MinS
+              Mins
             </label>
             <input
               type="number"
               min="1"
+              max="999"
               placeholder="60"
               value={duration}
-              onChange={(e) => setDuration(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "");
+                if (v === "" || Number(v) <= 999) setDuration(v);
+              }}
               className="w-full rounded-lg border border-border bg-elevated px-2.5 py-2.5 text-sm text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
             />
           </div>
@@ -203,9 +207,13 @@ export function WorkoutForm({ workoutId, initialData, onSave, onDraftSave, onCan
               type="number"
               min="1"
               step="0.1"
+              max="999"
               placeholder="175"
               value={bodyWeight}
-              onChange={(e) => setBodyWeight(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value.replace(/[^\d.]/g, "").replace(/^(\d*\.?\d*).*$/, "$1");
+                if (v === "" || v === "." || Number(v) <= 999) setBodyWeight(v);
+              }}
               className="w-full rounded-lg border border-border bg-elevated px-2.5 py-2.5 text-sm text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
             />
           </div>
