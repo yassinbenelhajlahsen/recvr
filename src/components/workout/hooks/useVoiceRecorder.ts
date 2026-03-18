@@ -1,8 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { fetchWithAuth } from "@/lib/fetch";
-import type { VoiceTranscribeResponse } from "@/types/voice";
+import type { VoiceTranscriptResult, VoiceTranscribeResponse } from "@/types/voice";
 
-export type VoiceState = "idle" | "requesting" | "recording" | "processing" | "done" | "error";
+export type VoiceState =
+  | "idle"
+  | "requesting"
+  | "recording"
+  | "transcribing"
+  | "transcribed"
+  | "parsing"
+  | "done"
+  | "error";
 
 const MAX_DURATION = 120; // seconds
 const BAR_COUNT = 20;
@@ -147,7 +155,6 @@ export function useVoiceRecorder() {
       blobResolveRef.current = resolve;
       recorder.stop();
 
-      stopAnalyser();
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -157,10 +164,10 @@ export function useVoiceRecorder() {
         streamRef.current = null;
       }
     });
-  }, []);
+  }, [stopAnalyser]);
 
   const processAudio = useCallback(async (blob: Blob) => {
-    setVoiceState("processing");
+    setVoiceState("transcribing");
 
     const formData = new FormData();
     formData.append("audio", blob, "recording.webm");
@@ -172,14 +179,14 @@ export function useVoiceRecorder() {
       });
 
       if (!res.ok) {
+        if (res.status === 429) throw new Error("Too many requests — try again later.");
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || `Transcription failed (${res.status})`);
       }
 
-      const data: VoiceTranscribeResponse = await res.json();
+      const data: VoiceTranscriptResult = await res.json();
       setTranscript(data.transcript);
-      setResult(data);
-      setVoiceState("done");
+      setVoiceState("transcribed");
       return data;
     } catch (err) {
       setVoiceState("error");
@@ -188,18 +195,19 @@ export function useVoiceRecorder() {
     }
   }, []);
 
-  const reparse = useCallback(async (text: string) => {
-    setVoiceState("processing");
+  const parseTranscript = useCallback(async (text: string) => {
+    setVoiceState("parsing");
     setError(null);
 
     try {
-      const res = await fetchWithAuth("/api/voice/transcribe", {
+      const res = await fetchWithAuth("/api/voice/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript: text }),
       });
 
       if (!res.ok) {
+        if (res.status === 429) throw new Error("Too many requests — try again later.");
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || `Parse failed (${res.status})`);
       }
@@ -235,7 +243,7 @@ export function useVoiceRecorder() {
     startRecording,
     stopRecording,
     processAudio,
-    reparse,
+    parseTranscript,
     reset,
   };
 }

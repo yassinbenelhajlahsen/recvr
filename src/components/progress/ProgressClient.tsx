@@ -7,6 +7,7 @@ import { DateRangeSelector } from "./DateRangeSelector";
 import { MetricSelector } from "./MetricSelector";
 import { ProgressChart } from "./ProgressChart";
 import { useProgress } from "@/lib/hooks";
+import { FetchError } from "@/components/ui/FetchError";
 
 const CHART_BLUE = "#5B8DEF";
 
@@ -30,7 +31,7 @@ function getChartLabel(metricMode: "1rm" | "topWeight" | "both") {
 }
 
 export function ProgressClient() {
-  const { data, isLoading } = useProgress();
+  const { data, isLoading, error, mutate } = useProgress();
 
   const exercises = data?.exercises ?? [];
   const sessionsByExercise = data?.sessionsByExercise ?? {};
@@ -46,6 +47,8 @@ export function ProgressClient() {
     chartData,
     bodyWeightChartData,
   } = useProgressFilters(exercises, sessionsByExercise, bodyWeightHistory);
+
+  if (error) return <FetchError onRetry={() => mutate()} />;
 
   if (isLoading) {
     return (

@@ -8,11 +8,12 @@ import { MuscleDetailPanel } from "./MuscleDetailPanel";
 import { useRecoverySelection } from "./hooks/useRecoverySelection";
 import { WorkoutDetailDrawer } from "@/components/workout/WorkoutDetailDrawer";
 import { useRecovery } from "@/lib/hooks";
+import { FetchError } from "@/components/ui/FetchError";
 import { normalizeGender } from "@/lib/utils";
 import type { UserProfile } from "@/types/user";
 
 export function RecoveryView() {
-  const { data: recovery = [] } = useRecovery();
+  const { data: recovery = [], error: recoveryError, mutate: mutateRecovery } = useRecovery();
   // Reuse the same SWR key as useNavbar — already warm from layout mount
   const { data: profile } = useSWR<UserProfile>("/api/user/profile", {
     dedupingInterval: 30_000,
@@ -23,6 +24,8 @@ export function RecoveryView() {
   const gender = normalizeGender(profile?.gender);
   const { selectedMuscle, selectedData, muscleMap, handleSelect, fatigued, partial, recovered } =
     useRecoverySelection(recovery);
+
+  if (recoveryError) return <FetchError onRetry={() => mutateRecovery()} />;
 
   return (
     <div className="flex flex-col gap-6">
