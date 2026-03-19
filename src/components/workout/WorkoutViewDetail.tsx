@@ -158,7 +158,7 @@ export function WorkoutViewDetail({
       {/* Loaded workout */}
       {!loading && workout && (
         <div>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 mb-2">
             <div className="flex items-center gap-3 text-sm text-secondary">
               {workout.duration_minutes && (
                 <span className="tabular-nums">
