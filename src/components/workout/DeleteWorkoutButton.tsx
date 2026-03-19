@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { mutate as globalMutate } from "swr";
 import { toast } from "sonner";
 import { fetchWithAuth } from "@/lib/fetch";
+import { useWorkoutStore } from "@/store/workoutStore";
 
 export function DeleteWorkoutButton({
   workoutId,
@@ -14,6 +15,7 @@ export function DeleteWorkoutButton({
   onDelete?: () => void;
 }) {
   const router = useRouter();
+  const setDeletingWorkoutId = useWorkoutStore((s) => s.setDeletingWorkoutId);
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -43,6 +45,7 @@ export function DeleteWorkoutButton({
       globalMutate("/api/recovery");
       globalMutate("/api/progress");
       toast.success("Workout deleted");
+      setDeletingWorkoutId(workoutId);
       if (onDelete) {
         onDelete();
       } else {

@@ -8,9 +8,11 @@ interface WorkoutStore {
   drawerView: DrawerView | null;
   selectedWorkoutId: string | null;
   previewData: WorkoutPreview | null;
+  deletingWorkoutId: string | null;
   openDrawer: (workoutId?: string, preview?: WorkoutPreview) => void;
   closeDrawer: () => void;
   setDrawerView: (view: DrawerView) => void;
+  setDeletingWorkoutId: (id: string | null) => void;
 }
 
 export const useWorkoutStore = create<WorkoutStore>((set) => ({
@@ -18,6 +20,7 @@ export const useWorkoutStore = create<WorkoutStore>((set) => ({
   drawerView: null,
   selectedWorkoutId: null,
   previewData: null,
+  deletingWorkoutId: null,
   openDrawer: (workoutId, preview) =>
     set({
       isDrawerOpen: true,
@@ -33,4 +36,5 @@ export const useWorkoutStore = create<WorkoutStore>((set) => ({
       previewData: null,
     }),
   setDrawerView: (view) => set({ drawerView: view }),
+  setDeletingWorkoutId: (id) => set({ deletingWorkoutId: id }),
 }));
