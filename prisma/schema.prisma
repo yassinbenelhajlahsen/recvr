@@ -86,7 +86,7 @@ model Suggestion {
   title      String
   rationale  String
   exercises  Json
-  presets    String[]
+  presets    String[] @default([])
   draft_id   String?  @unique @db.Uuid
   created_at DateTime @default(now())
 
