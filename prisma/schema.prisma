@@ -50,7 +50,7 @@ model Workout {
   workout_exercises WorkoutExercise[]
   suggestion        Suggestion?
 
-  @@index([user_id])
+  @@index([user_id, is_draft, date(sort: Desc)])
   @@index([date])
 }
 
@@ -93,6 +93,5 @@ model Suggestion {
   user  User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   draft Workout? @relation(fields: [draft_id], references: [id], onDelete: SetNull)
 
-  @@index([user_id])
   @@index([user_id, created_at(sort: Desc)])
 }
