@@ -29,6 +29,7 @@ function makeRequest(body: unknown) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockAuthorized();
+  (redis.incr as ReturnType<typeof vi.fn>).mockResolvedValue(1);
   (redis.get as ReturnType<typeof vi.fn>).mockResolvedValue(null);
   (redis.ttl as ReturnType<typeof vi.fn>).mockResolvedValue(-2);
   (prisma.exercise.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_EXERCISES);
@@ -92,7 +93,7 @@ describe("POST /api/voice/parse", () => {
   });
 
   it("returns 429 when rate limit is exceeded", async () => {
-    (redis.get as ReturnType<typeof vi.fn>).mockResolvedValue(20);
+    (redis.incr as ReturnType<typeof vi.fn>).mockResolvedValue(21);
     (redis.ttl as ReturnType<typeof vi.fn>).mockResolvedValue(1800);
     const res = await POST(makeRequest({ transcript: "bench press" }));
     expect(res.status).toBe(429);
@@ -100,7 +101,7 @@ describe("POST /api/voice/parse", () => {
   });
 
   it("returns 429 with fallback Retry-After when TTL is unknown", async () => {
-    (redis.get as ReturnType<typeof vi.fn>).mockResolvedValue(20);
+    (redis.incr as ReturnType<typeof vi.fn>).mockResolvedValue(21);
     (redis.ttl as ReturnType<typeof vi.fn>).mockResolvedValue(-1);
     const res = await POST(makeRequest({ transcript: "bench press" }));
     expect(res.status).toBe(429);

@@ -7,10 +7,18 @@ import {
   MAX_WEIGHT,
   MAX_DURATION,
   MAX_BODY_WEIGHT,
+  MAX_NOTES_LENGTH,
 } from "@/lib/constants";
 
 type RawSet = { reps: unknown; weight: unknown };
 type RawExercise = { sets?: unknown[] };
+
+export function validateNotes(notes: unknown): NextResponse | null {
+  if (typeof notes === "string" && notes.length > MAX_NOTES_LENGTH) {
+    return NextResponse.json({ error: `Notes must be ${MAX_NOTES_LENGTH} characters or less` }, { status: 400 });
+  }
+  return null;
+}
 
 export function validateWorkoutDate(date: unknown): NextResponse | null {
   if (!date) return null;

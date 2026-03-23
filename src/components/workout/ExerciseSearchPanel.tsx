@@ -131,7 +131,7 @@ export function ExerciseSearchPanel({
                     <div>
                       <p className="text-sm font-medium text-primary">
                         {ex.name}
-                        {ex.user_id && (
+                        {ex.is_custom && (
                           <span className="ml-2 text-[11px] font-normal text-muted bg-surface rounded px-1.5 py-0.5">
                             custom
                           </span>

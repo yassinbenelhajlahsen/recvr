@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { MAX_NAME_LENGTH } from "@/lib/constants";
 
 type ExerciseRow = { id: string; name: string; muscle_groups: string[] };
 
@@ -29,14 +30,15 @@ export async function resolveExercise(
 
   // Create a custom exercise for this user and add to allExercises so subsequent
   // iterations don't create duplicates for the same unknown name.
+  const safeName = name.slice(0, MAX_NAME_LENGTH);
   const created = await prisma.exercise.create({
     data: {
-      name,
+      name: safeName,
       muscle_groups: muscleGroups,
       user_id: userId,
     },
     select: { id: true },
   });
-  allExercises.push({ id: created.id, name, muscle_groups: muscleGroups });
-  return { id: created.id, name, muscleGroups, created: true };
+  allExercises.push({ id: created.id, name: safeName, muscle_groups: muscleGroups });
+  return { id: created.id, name: safeName, muscleGroups, created: true };
 }

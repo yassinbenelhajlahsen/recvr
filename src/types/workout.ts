@@ -17,7 +17,7 @@ export type Exercise = {
   name: string;
   muscle_groups: string[];
   equipment: string | null;
-  user_id: string | null;
+  is_custom: boolean;
 };
 
 export type WorkoutFormInitialData = {

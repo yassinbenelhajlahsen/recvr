@@ -194,7 +194,7 @@ function createSuggestionStream(
 
 export const POST = withLogging(async function POST(request: Request) {
   if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json({ error: "OpenAI API key not configured" }, { status: 500 });
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 
   const body = await request.json().catch(() => ({}));

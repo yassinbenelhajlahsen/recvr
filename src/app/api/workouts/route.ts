@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { invalidateRecovery } from "@/lib/cache";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { logger, withLogging } from "@/lib/logger";
 import {
   validateWorkoutDate,
   validateExercises,
+  validateNotes,
   parseDuration,
   parseBodyWeight,
   syncProfileWeight,
@@ -51,7 +53,13 @@ export const GET = withLogging(async function GET(request: Request) {
             }
           : {}),
       },
-      include: {
+      select: {
+        id: true,
+        date: true,
+        notes: true,
+        duration_minutes: true,
+        body_weight: true,
+        is_draft: true,
         workout_exercises: {
           orderBy: { order: "asc" },
           include: {
@@ -77,6 +85,9 @@ export const POST = withLogging(async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const rateLimited = await checkRateLimit(`workouts-create:${user.id}`, 60, 3600);
+  if (rateLimited) return rateLimited;
+
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
@@ -87,6 +98,9 @@ export const POST = withLogging(async function POST(request: Request) {
 
   const dateError = validateWorkoutDate(date);
   if (dateError) return dateError;
+
+  const notesError = validateNotes(notes);
+  if (notesError) return notesError;
 
   const exercisesError = validateExercises(exercises);
   if (exercisesError) return exercisesError;

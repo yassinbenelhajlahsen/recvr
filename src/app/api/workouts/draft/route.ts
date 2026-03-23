@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { invalidateExercises, setSuggestionDraftId } from "@/lib/cache";
 import { resolveExercise } from "@/lib/exerciseMatcher";
-import { validateWorkoutDate } from "@/lib/workout-validation";
+import { validateWorkoutDate, validateExercises } from "@/lib/workout-validation";
 import { linkDraftToSuggestion } from "@/lib/suggestion";
 import { logger, withLogging } from "@/lib/logger";
 import type { WorkoutSuggestion, SuggestedExercise } from "@/types/suggestion";
@@ -22,6 +22,11 @@ export const POST = withLogging(async function POST(request: Request) {
   if (!suggestion || !Array.isArray(suggestion.exercises)) {
     return NextResponse.json({ error: "Invalid suggestion" }, { status: 400 });
   }
+
+  const exercisesError = validateExercises(
+    suggestion.exercises.map((ex: SuggestedExercise) => ({ sets: ex.sets })),
+  );
+  if (exercisesError) return exercisesError;
 
   // Load all exercises available to this user (global + user-created)
   const allExercises = await prisma.exercise.findMany({

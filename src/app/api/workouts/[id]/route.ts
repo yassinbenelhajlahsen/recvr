@@ -2,16 +2,25 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { invalidateRecovery, invalidateSuggestionDraftId } from "@/lib/cache";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { logger, withLogging } from "@/lib/logger";
 import {
   validateWorkoutDate,
   validateExercises,
+  validateNotes,
   parseDuration,
   parseBodyWeight,
   syncProfileWeight,
 } from "@/lib/workout-validation";
 
-const WORKOUT_INCLUDE = {
+const WORKOUT_SELECT = {
+  id: true,
+  user_id: true,
+  date: true,
+  notes: true,
+  duration_minutes: true,
+  body_weight: true,
+  is_draft: true,
   workout_exercises: {
     orderBy: { order: "asc" as const },
     include: {
@@ -34,14 +43,15 @@ export const GET = withLogging(async function GET(
   try {
     const [{ data: claims, error }, workout] = await Promise.all([
       supabase.auth.getClaims(),
-      prisma.workout.findUnique({ where: { id }, include: WORKOUT_INCLUDE }),
+      prisma.workout.findUnique({ where: { id }, select: WORKOUT_SELECT }),
     ]);
     if (error || !claims) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const userId = claims.claims.sub as string;
     if (!workout || workout.user_id !== userId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    return NextResponse.json(workout);
+    const { user_id: _, ...safe } = workout;
+    return NextResponse.json(safe);
   } catch (err) {
     logger.error({ err }, "GET /api/workouts/[id] failed");
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
@@ -56,11 +66,13 @@ export const PUT = withLogging(async function PUT(
   const supabase = await createClient();
 
   try {
-    const [{ data: { user } }, existing] = await Promise.all([
-      supabase.auth.getUser(),
-      prisma.workout.findUnique({ where: { id } }),
-    ]);
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const rateLimited = await checkRateLimit(`workouts-update:${user.id}`, 120, 3600);
+    if (rateLimited) return rateLimited;
+
+    const existing = await prisma.workout.findUnique({ where: { id } });
     if (!existing || existing.user_id !== user.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -72,6 +84,9 @@ export const PUT = withLogging(async function PUT(
 
     const dateError = validateWorkoutDate(date);
     if (dateError) return dateError;
+
+    const notesError = validateNotes(notes);
+    if (notesError) return notesError;
 
     if (Array.isArray(exercises)) {
       const exercisesError = validateExercises(exercises);
@@ -127,12 +142,10 @@ export const PUT = withLogging(async function PUT(
       select: { id: true },
     });
 
-    await invalidateRecovery(user.id);
-
-    // Smart sync: update User.weight_lbs only if this is the latest workout with body_weight
-    if (parsedBodyWeight) {
-      await syncProfileWeight(user.id, id, parsedBodyWeight);
-    }
+    await Promise.all([
+      invalidateRecovery(user.id),
+      parsedBodyWeight ? syncProfileWeight(user.id, id, parsedBodyWeight) : Promise.resolve(),
+    ]);
 
     return NextResponse.json(workout);
   } catch (err) {

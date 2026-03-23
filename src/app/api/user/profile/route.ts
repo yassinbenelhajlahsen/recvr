@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { normalizeGender } from "@/lib/utils";
 import { logger, withLogging } from "@/lib/logger";
+import { MAX_NAME_LENGTH, MAX_HEIGHT_INCHES, MAX_WEIGHT_LBS } from "@/lib/constants";
 
 export const GET = withLogging(async function GET() {
   const supabase = await createClient();
@@ -46,15 +47,19 @@ export const PUT = withLogging(async function PUT(request: Request) {
   const data: Record<string, unknown> = {};
 
   if ("name" in body) {
-    data.name = typeof body.name === "string" && body.name.trim() ? body.name.trim() : null;
+    const trimmed = typeof body.name === "string" ? body.name.trim() : "";
+    if (trimmed && trimmed.length > MAX_NAME_LENGTH) {
+      return NextResponse.json({ error: `Name must be ${MAX_NAME_LENGTH} characters or less` }, { status: 400 });
+    }
+    data.name = trimmed || null;
   }
   if ("height_inches" in body) {
     const v = body.height_inches;
-    data.height_inches = typeof v === "number" && Number.isInteger(v) && v > 0 ? v : null;
+    data.height_inches = typeof v === "number" && Number.isInteger(v) && v > 0 && v <= MAX_HEIGHT_INCHES ? v : null;
   }
   if ("weight_lbs" in body) {
     const v = body.weight_lbs;
-    data.weight_lbs = typeof v === "number" && Number.isInteger(v) && v > 0 ? v : null;
+    data.weight_lbs = typeof v === "number" && Number.isInteger(v) && v > 0 && v <= MAX_WEIGHT_LBS ? v : null;
   }
   if ("fitness_goals" in body) {
     const v = body.fitness_goals;

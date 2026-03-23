@@ -23,3 +23,7 @@ export const MAX_REPS = 10000;
 export const MAX_WEIGHT = 10000;
 export const MAX_DURATION = 999;
 export const MAX_BODY_WEIGHT = 999;
+export const MAX_NAME_LENGTH = 100;
+export const MAX_NOTES_LENGTH = 2000;
+export const MAX_HEIGHT_INCHES = 120;
+export const MAX_WEIGHT_LBS = 1500;

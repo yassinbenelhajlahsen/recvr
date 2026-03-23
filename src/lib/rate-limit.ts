@@ -13,16 +13,15 @@ export async function checkRateLimit(
 ): Promise<NextResponse | null> {
   if (!redis) return null;
   try {
-    const count = await redis.get<number>(key);
-    if (count !== null && count >= max) {
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, windowSeconds);
+    if (count > max) {
       const ttl = await redis.ttl(key);
       return NextResponse.json(
         { error: "Rate limit exceeded. Try again later." },
         { status: 429, headers: { "Retry-After": String(ttl > 0 ? ttl : windowSeconds) } },
       );
     }
-    const newCount = await redis.incr(key);
-    if (newCount === 1) await redis.expire(key, windowSeconds);
   } catch {
     // Redis failure = skip rate limit
   }

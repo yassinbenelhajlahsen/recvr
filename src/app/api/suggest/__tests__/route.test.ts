@@ -88,7 +88,7 @@ describe("POST /api/suggest", () => {
       const res = await POST(makeRequest());
       expect(res.status).toBe(500);
       const data = await res.json();
-      expect(data.error).toMatch(/api key/i);
+      expect(data.error).toBe("Something went wrong");
     } finally {
       process.env.OPENAI_API_KEY = original;
     }
