@@ -45,13 +45,8 @@ test.describe("Workout CRUD", () => {
     await expect(submitBtn).toBeVisible({ timeout: 5_000 });
     await submitBtn.click();
 
-    // Wait for the summary view to appear (confirms workout was saved)
-    const doneBtn = dialog.getByRole("button", { name: /^done$/i });
-    await expect(doneBtn).toBeVisible({ timeout: 10_000 });
-    await doneBtn.click();
-
-    // Drawer should close
-    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
+    // Drawer closes after successful save (no intermediate summary screen)
+    await expect(dialog).not.toBeVisible({ timeout: 10_000 });
   });
 
   test("view workout details — clicking a workout card opens drawer with exercise data", async ({

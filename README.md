@@ -165,7 +165,7 @@ npm run test:run         # All unit/integration tests
 npm run test:e2e         # E2E suite (requires running dev server)
 ```
 
-E2E tests require `E2E_TEST_EMAIL` and `E2E_TEST_PASSWORD` env vars pointing to a test user with completed onboarding.
+E2E tests require `E2E_TEST_EMAIL` and `E2E_TEST_PASSWORD` env vars. Each run creates a fresh account, completes onboarding, runs all tests, then deletes the account. No pre-existing test user needed.
 
 ## Architecture Notes
 

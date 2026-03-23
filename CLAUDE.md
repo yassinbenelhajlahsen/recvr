@@ -282,8 +282,9 @@ src/
 - **Overriding Blob.size in tests**: jsdom defines `size` as own property on each Blob instance, blocking subclass override. For a fake large blob use `Object.defineProperty(new File([...], ...), "size", { get: () => N, configurable: true })` — `File` allows this. For non-Blob objects, use a plain object (won't pass `instanceof Blob` check).
 - **`vi.mock()` does NOT override `resolve.alias` entries** — aliases win. Use the aliased mock directly (import it, configure with `mockResolvedValue`).
 - **E2E tests** live in `e2e/` and run separately via `playwright test`. Vitest `include: ["src/**/*.test.{ts,tsx}"]` ensures no overlap.
-- **E2E auth**: `e2e/global-setup.ts` signs in once via UI and saves cookies to `e2e/.auth/user.json`. Set `E2E_TEST_EMAIL` + `E2E_TEST_PASSWORD` env vars. Test user must have `onboarding_completed = true` in DB.
-- **Playwright projects**: `chromium` (unauthenticated — smoke + auth spec), `authenticated` (uses stored state — dashboard, workout, recovery, progress specs).
+- **E2E lifecycle**: Each run is self-contained — `setup.spec.ts` creates a fresh account (signup + onboarding), all tests run, then `teardown.spec.ts` deletes the account. Set `E2E_TEST_EMAIL` + `E2E_TEST_PASSWORD` env vars. No pre-existing test user needed.
+- **Playwright projects** (4, with dependencies): `setup` → `chromium` (unauthenticated — smoke + auth) + `authenticated` (dashboard, workout, recovery, progress) → `teardown`.
+- **Setup handles stale accounts**: if `E2E_TEST_EMAIL` already exists (previous run failed before teardown), setup falls back to sign-in instead of failing.
 - **`[id]` route params**: pass as `Promise.resolve({ id: "..." })` in tests — routes declare `params: Promise<{ id: string }>`.
 - **useSuggestion hook tests**: mock `swr` module via `vi.mock('swr', ...)` to control `useSWR` return value. Use `vi.useFakeTimers()` for timer decrement tests. Mount with no wrapper needed (SWR is fully mocked).
 - **Test structure**: `src/lib/__tests__/`, `src/store/__tests__/`, `src/components/**/__tests__/`, `src/app/api/**/__tests__/`
